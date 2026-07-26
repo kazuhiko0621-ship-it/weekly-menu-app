@@ -1,0 +1,608 @@
+:root {
+  --paper: #f7f4ee;
+  --paper-line: #ddd6c7;
+  --ink: #2b2a26;
+  --ink-soft: #6b675c;
+  --indigo: #26415e;
+  --indigo-deep: #17293c;
+  --moss: #6b7a4f;
+  --surface: #ffffff;
+  --danger: #9c4a3a;
+  --radius: 10px;
+  --font-display: 'Shippori Mincho', serif;
+  --font-body: 'Zen Kaku Gothic New', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-shell {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+.app-header {
+  padding: 20px 20px 8px;
+  border-bottom: 1px solid var(--paper-line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.app-header-slim {
+  padding: 10px 14px;
+  align-items: center;
+}
+
+.app-header-slim h1 {
+  font-size: 16px;
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-btn {
+  border: 1px solid var(--indigo);
+  background: var(--surface);
+  color: var(--indigo);
+  font-size: 12px;
+  font-family: var(--font-body);
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.app-header h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--indigo-deep);
+  margin: 0;
+}
+
+.signout-btn {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+/* --- Login screen --- */
+.login-screen {
+  max-width: 320px;
+  margin: 18vh auto 0;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--indigo-deep);
+  margin: 0 0 4px;
+}
+
+.login-sub {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--paper-line);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  background: var(--surface);
+}
+
+.login-form input:focus {
+  outline: 2px solid var(--indigo);
+  outline-offset: 1px;
+}
+
+.login-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin: 0;
+}
+
+.login-form .btn-primary {
+  margin-top: 4px;
+}
+
+.app-main {
+  flex: 1;
+  padding: 12px 14px 90px;
+  overflow-y: auto;
+}
+
+/* --- Week nav --- */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 0 16px;
+}
+
+.week-nav-btn {
+  border: none;
+  background: var(--surface);
+  color: var(--indigo);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 18px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.week-range {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--indigo-deep);
+  min-width: 130px;
+  text-align: center;
+}
+
+/* --- Day list / cards --- */
+.day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-card {
+  background: var(--surface);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.day-card.is-today {
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 1px var(--indigo) inset;
+}
+
+.day-card-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.day-card-dow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--indigo-deep);
+  width: 22px;
+}
+
+.day-card-date {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.day-card-today-badge {
+  background: var(--moss);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.day-card-toggle {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--indigo);
+}
+
+.day-card-edit-btn {
+  margin-left: auto;
+  border: 1px solid var(--indigo);
+  background: var(--surface);
+  color: var(--indigo);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.day-card-body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-card-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding-bottom: 4px;
+}
+
+.day-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  border-top: 1px dashed var(--paper-line);
+  padding-top: 6px;
+}
+
+.slot-tag {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--indigo);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.meal-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.meal-name {
+  flex: 1;
+}
+
+.meal-name-link {
+  color: var(--indigo-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: 2px;
+}
+
+.notion-chip, .notion-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.day-card-editors {
+  padding: 4px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* --- Slot editor --- */
+.slot-editor {
+  border-top: 1px dashed var(--paper-line);
+  padding-top: 10px;
+}
+
+.slot-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.slot-editor-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--indigo-deep);
+  width: 20px;
+}
+
+.slot-editor-tabs {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.tab {
+  border: 1px solid var(--paper-line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.tab.active {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+}
+
+.slot-editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notion-link {
+  margin-top: 6px;
+}
+
+/* --- Combobox --- */
+.combobox { position: relative; }
+
+.combobox-input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.combobox-input:focus {
+  outline: 2px solid var(--indigo);
+  outline-offset: 1px;
+}
+
+.combobox-list {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--paper-line);
+  border-radius: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(23,41,60,0.14);
+}
+
+.combobox-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.combobox-item:hover { background: var(--paper); }
+
+.combobox-sublabel {
+  margin-left: auto;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.combobox-empty {
+  padding: 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* --- Buttons --- */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--indigo);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--paper-line);
+}
+
+/* --- Popular meals --- */
+.popular-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popular-row {
+  background: var(--surface);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+}
+
+.popular-row-main {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.popular-rank {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--indigo-deep);
+  width: 22px;
+}
+
+.popular-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.popular-count {
+  font-family: var(--font-display);
+  color: var(--moss);
+  font-size: 13px;
+}
+
+.popular-lastdate {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.popular-add-picker {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  border: 1px solid var(--paper-line);
+  background: var(--paper);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.chip.active {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #fff;
+}
+
+.picker-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* --- Meal edit screen --- */
+.edit-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.edit-screen-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.back-btn {
+  border: none;
+  background: none;
+  color: var(--indigo);
+  font-size: 14px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  padding: 0;
+}
+
+.edit-screen-date {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--indigo-deep);
+}
+
+.edit-screen-body {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+.filter-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* --- Nav bar --- */
+.nav-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--paper-line);
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  gap: 8px;
+}
+
+.nav-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+}
+
+.nav-btn.active {
+  background: var(--indigo);
+  color: #fff;
+}
+
+.loading-text, .empty-text {
+  color: var(--ink-soft);
+  font-size: 13px;
+  padding: 20px 4px;
+}
