@@ -34,6 +34,16 @@ body {
   background: var(--paper);
 }
 
+/* 表示中の週が「今週」のときだけ画面色を変え、入力ミスを防ぐ */
+.app-shell.is-current-week {
+  background: #eef4e7;
+}
+
+.app-shell.is-current-week .app-header-slim,
+.app-shell.is-current-week .app-main {
+  background: #eef4e7;
+}
+
 .app-header {
   padding: 20px 20px 8px;
   border-bottom: 1px solid var(--paper-line);
@@ -147,17 +157,21 @@ body {
 
 .app-main {
   flex: 1;
-  padding: 12px 14px 90px;
+  padding: 12px 10px 90px;
   overflow-y: auto;
 }
 
-/* --- Week nav --- */
-.week-nav {
+/* --- Header date + week nav --- */
+.app-header-date-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 10px 0 16px;
+  gap: 8px;
+}
+
+.app-header-date-nav .week-nav-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 15px;
 }
 
 .week-nav-btn {
@@ -169,15 +183,6 @@ body {
   border-radius: 50%;
   font-size: 18px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-}
-
-.week-range {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--indigo-deep);
-  min-width: 130px;
-  text-align: center;
 }
 
 /* --- Day list / cards --- */
@@ -209,8 +214,8 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 10px;
   background: transparent;
   border: none;
   text-align: left;
@@ -223,7 +228,7 @@ body {
   font-weight: 700;
   font-size: 17px;
   color: var(--indigo-deep);
-  width: 22px;
+  width: 18px;
 }
 
 .day-card-date {
@@ -257,10 +262,10 @@ body {
 }
 
 .day-card-body {
-  padding: 0 14px 14px;
+  padding: 0 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .day-card-empty {
@@ -273,17 +278,17 @@ body {
 .day-card-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 14px;
   border-top: 1px dashed var(--paper-line);
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .slot-tag {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--indigo);
-  width: 20px;
+  width: 16px;
   flex-shrink: 0;
 }
 
@@ -368,6 +373,30 @@ body {
   padding: 8px 0;
   border-radius: 8px;
   cursor: pointer;
+  position: relative;
+}
+
+.slot-tab-badge {
+  position: absolute;
+  top: -6px;
+  right: 10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #b5433a;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.slot-tab-badge.zero {
+  background: var(--ink-soft);
 }
 
 .slot-tab.active {

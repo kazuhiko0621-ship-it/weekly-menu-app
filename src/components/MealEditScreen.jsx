@@ -70,16 +70,20 @@ export default function MealEditScreen({ day, onBack }) {
         </div>
 
         <div className="slot-tabs">
-          {SLOTS.map((s) => (
-            <button
-              type="button"
-              key={s.key}
-              className={activeSlot === s.key ? 'slot-tab active' : 'slot-tab'}
-              onClick={() => changeSlot(s.key)}
-            >
-              {s.label}
-            </button>
-          ))}
+          {SLOTS.map((s) => {
+            const count = meals.filter((m) => m.slot === s.key).length
+            return (
+              <button
+                type="button"
+                key={s.key}
+                className={activeSlot === s.key ? 'slot-tab active' : 'slot-tab'}
+                onClick={() => changeSlot(s.key)}
+              >
+                {s.label}
+                <span className={`slot-tab-badge${count === 0 ? ' zero' : ''}`}>{count}</span>
+              </button>
+            )
+          })}
         </div>
 
         {mealsForActiveSlot.length > 0 && (

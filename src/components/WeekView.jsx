@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import DayCard from './DayCard.jsx'
 import NotionIcon from './NotionIcon.jsx'
 import ManualIcon from './ManualIcon.jsx'
-import { getWeekDays, formatWeekRange, isToday } from '../utils/date.js'
+import { getWeekDays, isToday } from '../utils/date.js'
 import { fetchMealsForWeek, moveMealToDate } from '../utils/mealsApi.js'
 
 const SWIPE_THRESHOLD = 50
@@ -97,16 +97,6 @@ export default function WeekView({ weekStart, onPrevWeek, onNextWeek, onEditDay,
 
   return (
     <div className="week-view" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <div className="week-nav">
-        <button type="button" className="week-nav-btn" onClick={onPrevWeek} aria-label="前の週">
-          ‹
-        </button>
-        <span className="week-range">{formatWeekRange(weekStart)}</span>
-        <button type="button" className="week-nav-btn" onClick={onNextWeek} aria-label="次の週">
-          ›
-        </button>
-      </div>
-
       {loading ? (
         <p className="loading-text">読み込み中…</p>
       ) : (
