@@ -1,43 +1,60 @@
 import { supabase } from '../supabaseClient.js'
 
-// 週の範囲(dateKeyの配列)に該当する献立を取得
+// 週の範囲(dateKeyの配列)に該当する献立を取得(同じ日・同じコマに複数件ある場合もある)
 export async function fetchMealsForWeek(dateKeys) {
   const { data, error } = await supabase
     .from('meals')
     .select('*')
     .in('date', dateKeys)
+    .order('created_at', { ascending: true })
   if (error) throw error
   return data ?? []
 }
 
-// 献立を1件保存(同じ date+slot があれば上書き、name が空なら削除)
-export async function upsertMeal({ date, slot, name, notion_page_id, notion_url, source }) {
+// 新規に1件登録する(同じ日・同じコマに既にレコードがあっても追加登録される)
+export async function insertMeal({ date, slot, name, notion_page_id, notion_url, source }) {
   const trimmed = (name ?? '').trim()
-
-  if (trimmed.length === 0) {
-    const { error } = await supabase.from('meals').delete().match({ date, slot })
-    if (error) throw error
-    return null
-  }
-
+  if (trimmed.length === 0) return null
   const { data, error } = await supabase
     .from('meals')
-    .upsert(
-      {
-        date,
-        slot,
-        name: trimmed,
-        notion_page_id: notion_page_id ?? null,
-        notion_url: notion_url ?? null,
-        source: source ?? 'manual',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'date,slot' }
-    )
+    .insert({
+      date,
+      slot,
+      name: trimmed,
+      notion_page_id: notion_page_id ?? null,
+      notion_url: notion_url ?? null,
+      source: source ?? 'manual',
+    })
     .select()
     .single()
   if (error) throw error
   return data
+}
+
+// 既存の1件を更新する
+export async function updateMeal(id, { name, notion_page_id, notion_url, source }) {
+  const trimmed = (name ?? '').trim()
+  if (trimmed.length === 0) return null
+  const { data, error } = await supabase
+    .from('meals')
+    .update({
+      name: trimmed,
+      notion_page_id: notion_page_id ?? null,
+      notion_url: notion_url ?? null,
+      source: source ?? 'manual',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// 1件削除する
+export async function deleteMeal(id) {
+  const { error } = await supabase.from('meals').delete().eq('id', id)
+  if (error) throw error
 }
 
 // 全履歴(過去〜現在に登録された全ての献立)を取得

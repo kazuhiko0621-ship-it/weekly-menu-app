@@ -51,7 +51,6 @@ export default function App() {
         <MealEditScreen
           day={editingDay}
           onBack={() => setEditingDay(null)}
-          bumpRefresh={bumpRefresh}
         />
       </div>
     )

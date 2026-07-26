@@ -1,42 +1,39 @@
 import { useEffect, useState } from 'react'
-import SlotEditor from './SlotEditor.jsx'
+import SlotPanel from './SlotPanel.jsx'
 import { SLOTS } from '../utils/date.js'
-import { fetchMealsForWeek, upsertMeal } from '../utils/mealsApi.js'
+import { fetchMealsForWeek } from '../utils/mealsApi.js'
 import { fetchNotionMeta } from '../utils/notion.js'
 
-// 献立入力画面(曜日ごとの朝/昼/夜をまとめて編集する専用画面)
-export default function MealEditScreen({ day, onBack, bumpRefresh }) {
+// 献立入力画面。朝/昼/夜をタブで切り替え、
+// 1つのコマにつき登録済み一覧・検索条件・検索結果の3エリアで編集する。
+export default function MealEditScreen({ day, onBack }) {
+  const [activeSlot, setActiveSlot] = useState('breakfast')
   const [meals, setMeals] = useState([])
   const [notionMeta, setNotionMeta] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    Promise.all([fetchMealsForWeek([day.dateKey]), fetchNotionMeta()]).then(([m, meta]) => {
-      if (cancelled) return
-      setMeals(m)
-      setNotionMeta(meta)
-      setLoading(false)
-    })
+    fetchNotionMeta().then((meta) => !cancelled && setNotionMeta(meta))
     return () => {
       cancelled = true
     }
+  }, [])
+
+  function reloadMeals() {
+    setLoading(true)
+    fetchMealsForWeek([day.dateKey]).then((m) => {
+      setMeals(m)
+      setLoading(false)
+    })
+  }
+
+  useEffect(() => {
+    reloadMeals()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day.dateKey])
 
-  const mealBySlot = Object.fromEntries(meals.map((m) => [m.slot, m]))
-
-  async function handleSave(slot, payload) {
-    const saved = await upsertMeal({ date: day.dateKey, slot, ...payload })
-    setMeals((prev) => [...prev.filter((m) => m.slot !== slot), ...(saved ? [saved] : [])])
-    bumpRefresh()
-  }
-
-  async function handleClear(slot) {
-    await upsertMeal({ date: day.dateKey, slot, name: '' })
-    setMeals((prev) => prev.filter((m) => m.slot !== slot))
-    bumpRefresh()
-  }
+  const mealsForActiveSlot = meals.filter((m) => m.slot === activeSlot)
 
   return (
     <div className="edit-screen">
@@ -49,21 +46,31 @@ export default function MealEditScreen({ day, onBack, bumpRefresh }) {
         </span>
       </div>
 
+      <div className="slot-tabs">
+        {SLOTS.map((s) => (
+          <button
+            type="button"
+            key={s.key}
+            className={activeSlot === s.key ? 'slot-tab active' : 'slot-tab'}
+            onClick={() => setActiveSlot(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <p className="loading-text">読み込み中…</p>
       ) : (
-        <div className="edit-screen-body">
-          {SLOTS.map((s) => (
-            <SlotEditor
-              key={s.key}
-              slotLabel={s.label}
-              meal={mealBySlot[s.key] ?? null}
-              notionMeta={notionMeta}
-              onSave={(payload) => handleSave(s.key, payload)}
-              onClear={() => handleClear(s.key)}
-            />
-          ))}
-        </div>
+        <SlotPanel
+          key={activeSlot}
+          slotLabel={SLOTS.find((s) => s.key === activeSlot).label}
+          slotKey={activeSlot}
+          dateKey={day.dateKey}
+          meals={mealsForActiveSlot}
+          notionMeta={notionMeta}
+          onChanged={reloadMeals}
+        />
       )}
     </div>
   )

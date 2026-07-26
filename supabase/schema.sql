@@ -13,8 +13,12 @@ create table if not exists meals (
   updated_at timestamptz not null default now()
 );
 
--- 1日1コマにつき1レコード(同じ日・同じslotは上書き)
-create unique index if not exists meals_date_slot_key on meals (date, slot);
+-- 以前は「1日1コマにつき1レコード」の一意制約を付けていましたが、
+-- 同じ食事(朝/昼/夜)に複数レシピを登録できるようにするため撤廃しました。
+-- すでにこのunique indexを作成済みの環境向けに、まずdropしています。
+drop index if exists meals_date_slot_key;
+
+create index if not exists meals_date_slot_idx on meals (date, slot);
 create index if not exists meals_name_idx on meals (name);
 create index if not exists meals_date_idx on meals (date);
 

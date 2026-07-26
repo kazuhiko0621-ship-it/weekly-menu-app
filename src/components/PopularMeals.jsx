@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import NotionIcon from './NotionIcon.jsx'
-import { fetchAllMeals, buildPopularRanking, upsertMeal } from '../utils/mealsApi.js'
+import { fetchAllMeals, buildPopularRanking, insertMeal } from '../utils/mealsApi.js'
 import { getWeekDays, SLOTS } from '../utils/date.js'
 
 // 人気献立(登場回数の降順)。行を選ぶと今週の献立に追加できる
@@ -35,7 +35,7 @@ export default function PopularMeals({ weekStart, onAdded }) {
     if (!selectedDateKey) return
     setSaving(true)
     try {
-      await upsertMeal({
+      await insertMeal({
         date: selectedDateKey,
         slot: selectedSlot,
         name: item.name,

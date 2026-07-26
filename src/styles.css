@@ -299,65 +299,236 @@ body {
   color: var(--ink-soft);
 }
 
-.day-card-editors {
-  padding: 4px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* --- Slot editor --- */
-.slot-editor {
-  border-top: 1px dashed var(--paper-line);
-  padding-top: 10px;
-}
-
-.slot-editor-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.slot-editor-label {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--indigo-deep);
-  width: 20px;
-}
-
-.slot-editor-tabs {
+/* --- Slot tabs (edit screen) --- */
+.slot-tabs {
   display: flex;
   gap: 6px;
-  margin-left: auto;
+  padding: 10px 14px 0;
 }
 
-.tab {
+.slot-tab {
+  flex: 1;
   border: 1px solid var(--paper-line);
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink-soft);
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 0;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-.tab.active {
+.slot-tab.active {
   background: var(--indigo);
   border-color: var(--indigo);
   color: #fff;
 }
 
-.slot-editor-actions {
+/* --- Slot panel (3エリア構成) --- */
+.slot-panel {
   display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+  padding-bottom: 90px;
+  gap: 14px;
+}
+
+.area-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.registered-area {
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.registered-row {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  padding: 6px 4px;
+  border-radius: 6px;
 }
 
-.notion-link {
+.registered-row.selected {
+  background: #eaf0f7;
+  outline: 1.5px solid var(--indigo);
+}
+
+.registered-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.icon-btn {
+  border: none;
+  background: var(--paper);
+  color: var(--indigo);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-btn-danger {
+  color: var(--danger);
+}
+
+.cancel-update-btn {
   margin-top: 6px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 12px;
+  text-decoration: underline;
 }
 
-/* --- Combobox --- */
+.search-area {
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chip-row-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+}
+
+.chip-row-scroll .chip {
+  flex-shrink: 0;
+}
+
+.results-area {
+  flex: 1;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.results-list {
+  flex: 1;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.results-hint {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  border-bottom: 1px solid var(--paper-line);
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.result-row:last-child {
+  border-bottom: none;
+}
+
+.result-row.selected {
+  background: #eaf0f7;
+}
+
+.result-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.result-sublabel {
+  font-size: 11px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.result-row-fallback .result-name {
+  color: var(--moss);
+}
+
+.commit-btn-wrap {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+
+.commit-btn {
+  border: none;
+  background: var(--indigo);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 12px 26px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(23, 41, 60, 0.3);
+}
+
+.commit-btn:disabled {
+  background: var(--paper-line);
+  color: var(--ink-soft);
+  box-shadow: none;
+}
+
+/* --- Message modal --- */
+.message-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 42, 38, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.message-modal {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 16px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(23, 41, 60, 0.25);
+}
+
+/* --- Combobox (search input reused in SlotPanel) --- */
 .combobox { position: relative; }
 
 .combobox-input {
