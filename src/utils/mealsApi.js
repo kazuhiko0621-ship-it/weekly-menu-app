@@ -1,5 +1,7 @@
 import { supabase } from '../supabaseClient.js'
 
+export const EACH_SOURCE = 'each' // 「各自」を表すsource値(献立としては扱わない)
+
 // 週の範囲(dateKeyの配列)に該当する献立を取得(同じ日・同じコマに複数件ある場合もある)
 export async function fetchMealsForWeek(dateKeys) {
   const { data, error } = await supabase
@@ -57,11 +59,24 @@ export async function deleteMeal(id) {
   if (error) throw error
 }
 
-// 全履歴(過去〜現在に登録された全ての献立)を取得
+// 別の日付に移動する(ドラッグ&ドロップでの曜日移動用)
+export async function moveMealToDate(id, newDate) {
+  const { data, error } = await supabase
+    .from('meals')
+    .update({ date: newDate, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// 全履歴(過去〜現在に登録された全ての献立)を取得。「各自」は献立として扱わないため除外する
 export async function fetchAllMeals() {
   const { data, error } = await supabase
     .from('meals')
     .select('*')
+    .neq('source', EACH_SOURCE)
     .order('date', { ascending: false })
   if (error) throw error
   return data ?? []
@@ -81,7 +96,7 @@ export async function searchHistoryMeals(query) {
   return Array.from(seen.values())
 }
 
-// 登場回数の降順ランキングを算出
+// 登場回数の降順ランキングを算出(fetchAllMeals側で「各自」は除外済み)
 export function buildPopularRanking(allMeals) {
   const map = new Map()
   for (const m of allMeals) {

@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react'
 import NotionIcon from './NotionIcon.jsx'
 import { fetchAllMeals, buildPopularRanking, insertMeal } from '../utils/mealsApi.js'
-import { getWeekDays, SLOTS } from '../utils/date.js'
+import { SLOTS, toDateKey } from '../utils/date.js'
 
-// 人気献立(登場回数の降順)。行を選ぶと今週の献立に追加できる
-export default function PopularMeals({ weekStart, onAdded }) {
+// 人気献立(登場回数の降順)。行を選ぶと任意の日付の献立として追加できる
+export default function PopularMeals({ onAdded }) {
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
   const [openItem, setOpenItem] = useState(null) // name of item being added
-  const [selectedDateKey, setSelectedDateKey] = useState(null)
+  const [selectedDateKey, setSelectedDateKey] = useState(() => toDateKey(new Date()))
   const [selectedSlot, setSelectedSlot] = useState('dinner')
   const [saving, setSaving] = useState(false)
-
-  const days = getWeekDays(weekStart)
 
   useEffect(() => {
     load()
@@ -27,7 +25,7 @@ export default function PopularMeals({ weekStart, onAdded }) {
 
   function openPicker(item) {
     setOpenItem(item.name)
-    setSelectedDateKey(days[0].dateKey)
+    setSelectedDateKey(toDateKey(new Date()))
     setSelectedSlot('dinner')
   }
 
@@ -81,18 +79,12 @@ export default function PopularMeals({ weekStart, onAdded }) {
 
           {openItem === item.name && (
             <div className="popular-add-picker">
-              <div className="picker-row">
-                {days.map((d) => (
-                  <button
-                    type="button"
-                    key={d.dateKey}
-                    className={selectedDateKey === d.dateKey ? 'chip active' : 'chip'}
-                    onClick={() => setSelectedDateKey(d.dateKey)}
-                  >
-                    {d.dowLabel}({d.date.getMonth() + 1}/{d.date.getDate()})
-                  </button>
-                ))}
-              </div>
+              <input
+                type="date"
+                className="date-input"
+                value={selectedDateKey}
+                onChange={(e) => setSelectedDateKey(e.target.value)}
+              />
               <div className="picker-row">
                 {SLOTS.map((s) => (
                   <button
@@ -107,7 +99,7 @@ export default function PopularMeals({ weekStart, onAdded }) {
               </div>
               <div className="picker-actions">
                 <button type="button" className="btn btn-primary" disabled={saving} onClick={() => confirmAdd(item)}>
-                  今週に追加
+                  この日に追加
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => setOpenItem(null)}>
                   キャンセル

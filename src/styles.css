@@ -45,10 +45,17 @@ body {
 .app-header-slim {
   padding: 10px 14px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
 }
 
-.app-header-slim h1 {
-  font-size: 16px;
+.app-header-date {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--indigo-deep);
 }
 
 .app-header-actions {
@@ -192,6 +199,12 @@ body {
   box-shadow: 0 0 0 1px var(--indigo) inset;
 }
 
+.day-card.is-drop-target {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 2px var(--moss) inset;
+  background: #f2f5ec;
+}
+
 .day-card-head {
   width: 100%;
   display: flex;
@@ -288,6 +301,44 @@ body {
   text-decoration: underline;
   text-decoration-color: var(--paper-line);
   text-underline-offset: 2px;
+}
+
+.meal-name-each {
+  color: var(--ink-soft);
+}
+
+.grip-handle {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+  padding: 4px;
+  display: inline-flex;
+  cursor: grab;
+  /* ドラッグ操作をこのハンドルに閉じ込め、行の他の部分では
+     通常の縦スクロールを妨げないようにする */
+  touch-action: none;
+}
+
+/* --- Drag ghost (WeekView) --- */
+.drag-ghost {
+  position: fixed;
+  z-index: 60;
+  transform: translate(-50%, -120%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--indigo);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(23, 41, 60, 0.25);
+  pointer-events: none;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .notion-chip, .notion-link {
@@ -426,6 +477,17 @@ body {
   flex-direction: column;
 }
 
+.results-area-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.results-area-head .area-label {
+  margin: 0;
+}
+
 .results-list {
   flex: 1;
   border: 1px solid var(--paper-line);
@@ -536,7 +598,9 @@ body {
   padding: 9px 10px;
   border: 1px solid var(--paper-line);
   border-radius: 8px;
-  font-size: 14px;
+  /* iOSはinputのfont-sizeが16px未満だとフォーカス時に画面を自動拡大するため、
+     それを防ぐために16px以上を指定している */
+  font-size: 16px;
   font-family: var(--font-body);
   background: var(--paper);
   color: var(--ink);
@@ -700,12 +764,19 @@ body {
   min-height: 100vh;
 }
 
+.edit-screen-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: var(--paper);
+  border-bottom: 1px solid var(--paper-line);
+}
+
 .edit-screen-head {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px;
-  border-bottom: 1px solid var(--paper-line);
 }
 
 .back-btn {
@@ -776,4 +847,61 @@ body {
   color: var(--ink-soft);
   font-size: 13px;
   padding: 20px 4px;
+}
+
+/* --- Toggle switch (各自) --- */
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--paper-line);
+  position: relative;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch.on .toggle-track {
+  background: var(--moss);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.on .toggle-knob {
+  transform: translateX(16px);
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* --- Date input (人気献立の追加先選択) --- */
+.date-input {
+  padding: 8px 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: var(--font-body);
+  background: var(--surface);
+  color: var(--ink);
 }

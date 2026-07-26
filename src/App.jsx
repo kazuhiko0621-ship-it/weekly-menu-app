@@ -5,7 +5,7 @@ import NavBar from './components/NavBar.jsx'
 import LoginScreen from './components/LoginScreen.jsx'
 import MealEditScreen from './components/MealEditScreen.jsx'
 import { supabase } from './supabaseClient.js'
-import { getWeekStart, addDays } from './utils/date.js'
+import { getWeekStart, addDays, formatWeekRange } from './utils/date.js'
 
 export default function App() {
   const [view, setView] = useState('week')
@@ -48,10 +48,7 @@ export default function App() {
   if (editingDay) {
     return (
       <div className="app-shell">
-        <MealEditScreen
-          day={editingDay}
-          onBack={() => setEditingDay(null)}
-        />
+        <MealEditScreen day={editingDay} onBack={() => setEditingDay(null)} />
       </div>
     )
   }
@@ -59,7 +56,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header app-header-slim">
-        <h1>週間献立</h1>
+        <span className="app-header-date">{formatWeekRange(weekStart)}</span>
         <div className="app-header-actions">
           <button type="button" className="header-btn" onClick={goToCurrentWeek}>
             今週に戻る
@@ -80,7 +77,7 @@ export default function App() {
             refreshKey={refreshKey}
           />
         )}
-        {view === 'popular' && <PopularMeals weekStart={weekStart} onAdded={bumpRefresh} />}
+        {view === 'popular' && <PopularMeals onAdded={bumpRefresh} />}
       </main>
 
       <NavBar view={view} onChange={setView} />
