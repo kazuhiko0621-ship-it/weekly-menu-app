@@ -47,7 +47,7 @@ export default function MealEditScreen({ day, onBack }) {
 
   async function handleDelete(meal) {
     if (!window.confirm(`「${meal.name}」を削除しますか？`)) return
-    await deleteMeal(meal.id)
+    await deleteMeal(meal)
     if (selectedMealId === meal.id) setSelectedMealId(null)
     setMessage('削除しました')
     reloadMeals()

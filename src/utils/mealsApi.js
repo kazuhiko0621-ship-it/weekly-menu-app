@@ -2,6 +2,35 @@ import { supabase } from '../supabaseClient.js'
 
 export const EACH_SOURCE = 'each' // 「各自」を表すsource値(献立としては扱わない)
 
+// Googleカレンダーへの同期(失敗しても献立管理そのものは止めない)
+async function syncMealToCalendar(meal) {
+  try {
+    const { data, error } = await supabase.functions.invoke('calendar-sync', {
+      body: { mode: 'upsert', meal },
+    })
+    if (error) {
+      console.error('calendar-sync(upsert) error', error)
+      return null
+    }
+    return data
+  } catch (e) {
+    console.error('calendar-sync(upsert) error', e)
+    return null
+  }
+}
+
+async function deleteMealFromCalendar(googleEventId) {
+  if (!googleEventId) return
+  try {
+    const { error } = await supabase.functions.invoke('calendar-sync', {
+      body: { mode: 'delete', google_event_id: googleEventId },
+    })
+    if (error) console.error('calendar-sync(delete) error', error)
+  } catch (e) {
+    console.error('calendar-sync(delete) error', e)
+  }
+}
+
 // 週の範囲(dateKeyの配列)に該当する献立を取得(同じ日・同じコマに複数件ある場合もある)
 export async function fetchMealsForWeek(dateKeys) {
   const { data, error } = await supabase
@@ -14,6 +43,7 @@ export async function fetchMealsForWeek(dateKeys) {
 }
 
 // 新規に1件登録する(同じ日・同じコマに既にレコードがあっても追加登録される)
+// 登録後、Googleカレンダーにも予定を作成する
 export async function insertMeal({ date, slot, name, notion_page_id, notion_url, source }) {
   const trimmed = (name ?? '').trim()
   if (trimmed.length === 0) return null
@@ -30,10 +60,13 @@ export async function insertMeal({ date, slot, name, notion_page_id, notion_url,
     .select()
     .single()
   if (error) throw error
+
+  const synced = await syncMealToCalendar(data)
+  if (synced?.google_event_id) data.google_event_id = synced.google_event_id
   return data
 }
 
-// 既存の1件を更新する
+// 既存の1件を更新する。Googleカレンダー側の予定も合わせて更新する
 export async function updateMeal(id, { name, notion_page_id, notion_url, source }) {
   const trimmed = (name ?? '').trim()
   if (trimmed.length === 0) return null
@@ -50,16 +83,19 @@ export async function updateMeal(id, { name, notion_page_id, notion_url, source 
     .select()
     .single()
   if (error) throw error
+
+  await syncMealToCalendar(data)
   return data
 }
 
-// 1件削除する
-export async function deleteMeal(id) {
-  const { error } = await supabase.from('meals').delete().eq('id', id)
+// 1件削除する。Googleカレンダー側の予定も削除する
+export async function deleteMeal(meal) {
+  await deleteMealFromCalendar(meal.google_event_id)
+  const { error } = await supabase.from('meals').delete().eq('id', meal.id)
   if (error) throw error
 }
 
-// 別の日付に移動する(ドラッグ&ドロップでの曜日移動用)
+// 別の日付に移動する(ドラッグ&ドロップでの曜日移動用)。Googleカレンダーの予定日時も更新する
 export async function moveMealToDate(id, newDate) {
   const { data, error } = await supabase
     .from('meals')
@@ -68,6 +104,8 @@ export async function moveMealToDate(id, newDate) {
     .select()
     .single()
   if (error) throw error
+
+  await syncMealToCalendar(data)
   return data
 }
 

@@ -72,7 +72,59 @@ supabase/functions/notion-search … Notion検索用 Edge Function
 
 パスワードを忘れた場合や増員したい場合も、同じ「Authentication → Users」画面から再設定・追加ができます。
 
-## 3. ローカル開発
+## 3. Googleカレンダー連携の準備
+
+献立を登録/更新/削除/移動すると、Googleカレンダーの予定にほぼリアルタイムで反映されます。夫婦2人など少人数での個人利用を想定し、Googleの正式な審査(アプリ検証)を受けずに使える設定にしています。
+
+### 3-1. Google Cloudプロジェクトの作成とAPI有効化
+
+1. https://console.cloud.google.com を開き、新しいプロジェクトを作成
+2. 左メニュー「APIとサービス」→「ライブラリ」で **Google Calendar API** を検索し、有効化する
+
+### 3-2. OAuth同意画面の設定
+
+1. 「APIとサービス」→「OAuth同意画面」を開く
+2. User Type は **外部(External)** を選択(個人のGoogleアカウントの場合、これしか選べません)
+3. アプリ名(何でも構いません。例:「週間献立」)、自分のメールアドレスなどを入力して保存
+4. スコープの追加画面で `../auth/calendar` (Google Calendar API の読み書きスコープ)を追加
+5. テストユーザーの追加は不要です。保存後、画面上部の公開ステータスを **「テスト中」から「本番環境」に変更** してください
+   - 「本番環境」に変更する際、審査(検証)を求められる場合がありますが、個人利用(100人未満)の場合は **審査を受けずにそのまま本番環境として使うことができます**(「アプリの確認は不要です」といった趣旨の案内が出ます)
+   - これを行わず「テスト中」のままにすると、認証情報(リフレッシュトークン)が **7日で失効し**、7日おきに再認証が必要になってしまうため、必ず本番環境に変更してください
+
+### 3-3. OAuthクライアントの作成
+
+1. 「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuthクライアントID」
+2. アプリケーションの種類は **「ウェブアプリケーション」** を選択(名前は何でも構いません)
+3. 「承認済みのリダイレクトURI」に `https://developers.google.com/oauthplayground` を追加登録する(OAuth Playgroundを使うために必須です)
+4. 作成すると **クライアントID** と **クライアントシークレット** が発行されるので控えておく
+
+### 3-4. リフレッシュトークンの取得(この作業は最初に1回だけ)
+
+1. https://developers.google.com/oauthplayground を開く
+2. 右上の歯車アイコン →「Use your own OAuth credentials」にチェックを入れ、3-3で控えた クライアントID・シークレットを入力
+3. 左側の一覧から「Google Calendar API v3」→ `https://www.googleapis.com/auth/calendar` にチェックを入れて「Authorize APIs」
+4. 献立を反映したいGoogleアカウント(自分や、夫婦共有用に新しく作ったアカウントなど)でログイン・許可する
+   - この時点で「このアプリは Google で確認されていません」という警告が出ますが、自分で作ったアプリなので「詳細」→「(アプリ名)に移動(安全ではないページ)」を選んで進めてください
+5. 「Exchange authorization code for tokens」をクリックすると **Refresh token** が表示されるので控えておく
+
+### 3-5. 反映先カレンダーの確認
+
+- 特に何も作らなければ、そのGoogleアカウントの **メインカレンダー**(`primary`)に予定が作成されます
+- 献立専用のカレンダーを分けたい場合は、Googleカレンダーで新しいカレンダーを作成し、その「カレンダー設定」→「カレンダーの統合」にある **カレンダーID**(`xxxxx@group.calendar.google.com` の形式)を控えておいてください。夫婦で見る場合は、このカレンダーを配偶者のGoogleアカウントと共有(表示権限)しておくと、双方のGoogleカレンダーアプリに表示されます
+
+### 3-6. Edge Functionのデプロイとsecrets設定
+
+```powershell
+supabase functions deploy calendar-sync
+supabase secrets set GOOGLE_CLIENT_ID=xxxxx GOOGLE_CLIENT_SECRET=xxxxx GOOGLE_REFRESH_TOKEN=xxxxx GOOGLE_CALENDAR_ID=xxxxx
+```
+
+- `GOOGLE_CALENDAR_ID` は、3-5で専用カレンダーを作らなかった場合は `primary` を指定してください
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` は、Supabaseが各Edge Functionに自動で渡してくれるため、こちらで設定する必要はありません
+
+これで、アプリ側で献立を登録・更新・削除・別の日への移動をするたびに、Googleカレンダーの予定が自動で作成・更新・削除されます(朝食7:00〜7:30、昼食12:00〜13:00、夕食19:00〜20:00 の枠で登録され、Notionのレシピにリンクしている場合は予定の詳細欄にURLが入ります)。
+
+## 4. ローカル開発
 
 ```bash
 npm install
@@ -81,7 +133,7 @@ cp .env.example .env
 npm run dev
 ```
 
-## 4. GitHubへpush & GitHub Pagesへデプロイ
+## 5. GitHubへpush & GitHub Pagesへデプロイ
 
 1. このフォルダの内容でGitHubリポジトリを作成しpush
 2. リポジトリの Settings → Secrets and variables → Actions で以下を登録
@@ -92,6 +144,9 @@ npm run dev
 5. 発行されたURL(`https://<user>.github.io/<repo>/`)にスマホでアクセスし、「ホーム画面に追加」からPWAとしてインストールできます
 
 ## 既知の制限・改善ポイント
+
+- Googleカレンダーとの同期に失敗しても(トークン切れなど)、献立の登録・編集自体はそのまま行えます。同期エラーはブラウザの開発者ツールのコンソールに出力されるだけで、アプリ画面上にはエラー表示しない設計にしています(同期は「おまけ機能」という位置づけです)
+- リフレッシュトークンが失効した場合(Googleアカウントのパスワード変更、6か月以上未使用、など)は、3-4の手順を再度行ってトークンを取り直し、`supabase secrets set` で更新してください
 
 - 同じ食事(朝/昼/夜)に複数レシピを登録できるようにしたため、以前作成したテーブルをお使いの場合は **`supabase/schema.sql` をもう一度SQL Editorで実行してください**(1日1コマ1件の制約を撤廃するdrop文が含まれています)
 - 「各自」機能の追加に伴い、`source`列の許可値に`each`を追加しています。こちらも**`supabase/schema.sql`の再実行**で反映されます

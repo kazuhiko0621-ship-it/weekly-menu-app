@@ -9,9 +9,13 @@ create table if not exists meals (
   notion_page_id text,
   notion_url text,
   source text not null default 'manual' check (source in ('notion','manual','history','each')),
+  google_event_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 既存環境向け: Googleカレンダー連携用の列を追加
+alter table meals add column if not exists google_event_id text;
 
 -- 既存環境向け: sourceの許可値に "each"(各自)を追加する(すでに反映済みでも安全に実行できる)
 alter table meals drop constraint if exists meals_source_check;
