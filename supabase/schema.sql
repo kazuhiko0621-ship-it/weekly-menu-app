@@ -8,8 +8,9 @@ create table if not exists meals (
   name text not null,
   notion_page_id text,
   notion_url text,
-  source text not null default 'manual' check (source in ('notion','manual','history','each')),
+  source text not null default 'manual' check (source in ('notion','manual','history','each','dining')),
   google_event_id text,
+  place_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -17,9 +18,12 @@ create table if not exists meals (
 -- 既存環境向け: Googleカレンダー連携用の列を追加
 alter table meals add column if not exists google_event_id text;
 
--- 既存環境向け: sourceの許可値に "each"(各自)を追加する(すでに反映済みでも安全に実行できる)
+-- 既存環境向け: 外食(Googleマップの店舗)用の列を追加
+alter table meals add column if not exists place_id text;
+
+-- 既存環境向け: sourceの許可値に "each"(各自) / "dining"(外食) を追加する(すでに反映済みでも安全に実行できる)
 alter table meals drop constraint if exists meals_source_check;
-alter table meals add constraint meals_source_check check (source in ('notion','manual','history','each'));
+alter table meals add constraint meals_source_check check (source in ('notion','manual','history','each','dining'));
 
 -- 以前は「1日1コマにつき1レコード」の一意制約を付けていましたが、
 -- 同じ食事(朝/昼/夜)に複数レシピを登録できるようにするため撤廃しました。

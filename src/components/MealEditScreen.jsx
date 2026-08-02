@@ -94,7 +94,7 @@ export default function MealEditScreen({ day, onBack }) {
               return (
                 <div key={m.id} className={`registered-row${selectedMealId === m.id ? ' selected' : ''}`}>
                   <span className="meal-icon">
-                    {isEach ? '❌' : m.notion_url ? <NotionIcon /> : <ManualIcon />}
+                    {isEach ? '❌' : m.source === 'dining' ? '📍' : m.notion_url ? <NotionIcon /> : <ManualIcon />}
                   </span>
                   <span className="registered-name">{isEach ? '各自' : m.name}</span>
                   <button

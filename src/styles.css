@@ -416,6 +416,31 @@ body {
   gap: 14px;
 }
 
+/* --- Mode tabs (レシピ / 外食 / 各自) --- */
+.mode-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.mode-tab {
+  flex: 1;
+  border: 1px solid var(--paper-line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.mode-tab.active {
+  background: var(--moss);
+  border-color: var(--moss);
+  color: #fff;
+}
+
 .area-label {
   margin: 0 0 6px;
   font-size: 12px;

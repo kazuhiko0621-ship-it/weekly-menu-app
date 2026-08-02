@@ -55,7 +55,10 @@ async function getAccessToken() {
     }),
   })
   const data = await res.json()
-  if (!res.ok) throw { status: res.status, body: data }
+  if (!res.ok) {
+    console.error('getAccessToken failed', res.status, JSON.stringify(data))
+    throw { status: res.status, body: data }
+  }
   return data.access_token as string
 }
 
@@ -63,10 +66,13 @@ function buildEvent(meal: any) {
   const label = SLOT_LABEL[meal.slot] ?? meal.slot
   const time = SLOT_TIME[meal.slot] ?? SLOT_TIME.dinner
   const name = meal.source === 'each' ? '各自' : meal.name
+  const mapsUrl = meal.source === 'dining' && meal.place_id
+    ? `https://www.google.com/maps/place/?q=place_id:${meal.place_id}`
+    : undefined
 
   return {
     summary: `${label}: ${name}`,
-    description: meal.notion_url ? meal.notion_url : undefined,
+    description: meal.notion_url ?? mapsUrl,
     start: { dateTime: `${meal.date}T${time.start}+09:00`, timeZone: 'Asia/Tokyo' },
     end: { dateTime: `${meal.date}T${time.end}+09:00`, timeZone: 'Asia/Tokyo' },
   }
@@ -159,6 +165,7 @@ serve(async (req) => {
 
     return json({ ok: true, google_event_id: data.id })
   } catch (e: any) {
+    console.error('calendar-sync error', JSON.stringify(e))
     const status = e?.status ?? 500
     return json({ error: e?.body ?? String(e) }, status)
   }

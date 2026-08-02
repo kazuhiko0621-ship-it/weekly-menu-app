@@ -44,7 +44,7 @@ export async function fetchMealsForWeek(dateKeys) {
 
 // 新規に1件登録する(同じ日・同じコマに既にレコードがあっても追加登録される)
 // 登録後、Googleカレンダーにも予定を作成する
-export async function insertMeal({ date, slot, name, notion_page_id, notion_url, source }) {
+export async function insertMeal({ date, slot, name, notion_page_id, notion_url, place_id, source }) {
   const trimmed = (name ?? '').trim()
   if (trimmed.length === 0) return null
   const { data, error } = await supabase
@@ -55,6 +55,7 @@ export async function insertMeal({ date, slot, name, notion_page_id, notion_url,
       name: trimmed,
       notion_page_id: notion_page_id ?? null,
       notion_url: notion_url ?? null,
+      place_id: place_id ?? null,
       source: source ?? 'manual',
     })
     .select()
@@ -67,7 +68,7 @@ export async function insertMeal({ date, slot, name, notion_page_id, notion_url,
 }
 
 // 既存の1件を更新する。Googleカレンダー側の予定も合わせて更新する
-export async function updateMeal(id, { name, notion_page_id, notion_url, source }) {
+export async function updateMeal(id, { name, notion_page_id, notion_url, place_id, source }) {
   const trimmed = (name ?? '').trim()
   if (trimmed.length === 0) return null
   const { data, error } = await supabase
@@ -76,6 +77,7 @@ export async function updateMeal(id, { name, notion_page_id, notion_url, source 
       name: trimmed,
       notion_page_id: notion_page_id ?? null,
       notion_url: notion_url ?? null,
+      place_id: place_id ?? null,
       source: source ?? 'manual',
       updated_at: new Date().toISOString(),
     })
@@ -120,12 +122,13 @@ export async function fetchAllMeals() {
   return data ?? []
 }
 
-// name の部分一致で履歴から候補を取得(直近優先・重複除去)
+// name の部分一致で履歴(レシピ・手入力のみ、外食は対象外)から候補を取得(直近優先・重複除去)
 export async function searchHistoryMeals(query) {
   const all = await fetchAllMeals()
   const q = (query ?? '').trim().toLowerCase()
   const seen = new Map()
   for (const m of all) {
+    if (m.source === 'dining') continue
     if (q && !m.name.toLowerCase().includes(q)) continue
     if (!seen.has(m.name)) {
       seen.set(m.name, m) // 最初に出てくるもの = 最新(dateの降順で取得済み)
