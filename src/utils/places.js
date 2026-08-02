@@ -6,12 +6,57 @@ export function mapsUrlForPlaceId(placeId) {
   return `https://www.google.com/maps/place/?q=place_id:${placeId}`
 }
 
+export function formatDistance(meters) {
+  if (meters == null) return null
+  if (meters < 1000) return `${Math.round(meters)}m`
+  return `${(meters / 1000).toFixed(1)}km`
+}
+
+// 現在地(ブラウザのGeolocation)を1回だけ取得してキャッシュする。
+// 取得できない/拒否された場合はnullを返し、距離順は使わず通常検索にフォールバックする。
+let cachedPosition = null
+let positionPromise = null
+
+function getCurrentPosition() {
+  if (cachedPosition) return Promise.resolve(cachedPosition)
+  if (positionPromise) return positionPromise
+  positionPromise = new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        cachedPosition = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+        resolve(cachedPosition)
+      },
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 5 * 60 * 1000 }
+    )
+  })
+  return positionPromise
+}
+
 export async function searchRestaurants(query) {
   if (!API_KEY) {
     console.warn('[places] VITE_GOOGLE_PLACES_API_KEY が設定されていません。')
     return []
   }
   if (!query || query.trim().length === 0) return []
+
+  const origin = await getCurrentPosition()
+
+  const body = {
+    input: query.trim(),
+    languageCode: 'ja',
+    regionCode: 'jp',
+    includedPrimaryTypes: ['restaurant'],
+  }
+  if (origin) {
+    body.origin = origin
+    // 現在地から半径5km圏内を優先しつつ、圏外の結果も除外はしない
+    body.locationBias = { circle: { center: origin, radius: 5000 } }
+  }
 
   try {
     const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
@@ -20,21 +65,16 @@ export async function searchRestaurants(query) {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': API_KEY,
         'X-Goog-FieldMask':
-          'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat',
+          'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat,suggestions.placePrediction.distanceMeters',
       },
-      body: JSON.stringify({
-        input: query.trim(),
-        languageCode: 'ja',
-        regionCode: 'jp',
-        includedPrimaryTypes: ['restaurant'],
-      }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     if (!res.ok) {
       console.error('places autocomplete error', data)
       return []
     }
-    return (data.suggestions ?? [])
+    const results = (data.suggestions ?? [])
       .filter((s) => s.placePrediction)
       .map((s) => {
         const p = s.placePrediction
@@ -42,8 +82,15 @@ export async function searchRestaurants(query) {
           placeId: p.placeId,
           name: p.structuredFormat?.mainText?.text ?? '',
           address: p.structuredFormat?.secondaryText?.text ?? '',
+          distanceMeters: p.distanceMeters ?? null,
         }
       })
+
+    // origin(現在地)が取れているときだけ、近い順に並び替える
+    if (origin) {
+      results.sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity))
+    }
+    return results
   } catch (e) {
     console.error('places autocomplete error', e)
     return []

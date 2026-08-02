@@ -15,6 +15,13 @@ export default function NavBar({ view, onChange }) {
       >
         人気献立
       </button>
+      <button
+        type="button"
+        className={view === 'wishlist' ? 'nav-btn active' : 'nav-btn'}
+        onClick={() => onChange('wishlist')}
+      >
+        食べたいリスト
+      </button>
     </nav>
   )
 }

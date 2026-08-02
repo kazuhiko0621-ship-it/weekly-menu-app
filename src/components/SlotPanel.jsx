@@ -2,14 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import NotionIcon from './NotionIcon.jsx'
 import ManualIcon from './ManualIcon.jsx'
 import { searchNotionRecipes } from '../utils/notion.js'
-import { searchHistoryMeals, insertMeal, updateMeal, EACH_SOURCE } from '../utils/mealsApi.js'
-import { searchRestaurants } from '../utils/places.js'
-
-const MODES = [
-  { key: 'recipe', label: 'レシピ' },
-  { key: 'dining', label: '外食' },
-  { key: 'each', label: '各自' },
-]
+import { searchHistoryMeals, EACH_SOURCE } from '../utils/mealsApi.js'
+import { searchRestaurants, formatDistance } from '../utils/places.js'
 
 function modeFromSource(source) {
   if (source === 'each') return 'each'
@@ -17,9 +11,25 @@ function modeFromSource(source) {
   return 'recipe'
 }
 
-// 1つの食事コマ(朝/昼/夜のいずれか)の検索・登録パネル。
-// 「レシピ / 外食 / 各自」をタブで切り替え、モードごとに検索条件・検索結果を出し分ける。
-export default function SlotPanel({ slotKey, dateKey, meals, selectedMeal, notionMeta, onMessage, onCommitted }) {
+// 1つの登録枠(献立の朝/昼/夜、または食べたいものリスト)の検索・登録パネル。
+// 「レシピ / 外食 / (各自)」をタブで切り替え、モードごとに検索条件・検索結果を出し分ける。
+// 実際の保存処理は行わず、確定した内容を onCommit に渡すだけ(呼び出し側が
+// 献立テーブル/食べたいものリストのどちらに書き込むかを決める)。
+export default function SlotPanel({
+  meals = [],
+  selectedMeal,
+  notionMeta,
+  showEachTab = true,
+  onMessage,
+  onCommit,
+  onCommitted,
+}) {
+  const MODES = [
+    { key: 'recipe', label: 'レシピ' },
+    { key: 'dining', label: '外食' },
+    ...(showEachTab ? [{ key: 'each', label: '各自' }] : []),
+  ]
+
   const [mode, setMode] = useState('recipe')
   const [text, setText] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
@@ -156,13 +166,8 @@ export default function SlotPanel({ slotKey, dateKey, meals, selectedMeal, notio
       }
     }
 
-    if (selectedMeal) {
-      await updateMeal(selectedMeal.id, payload)
-      onMessage('更新しました')
-    } else {
-      await insertMeal({ date: dateKey, slot: slotKey, ...payload })
-      onMessage('登録しました')
-    }
+    await onCommit(payload)
+    onMessage(selectedMeal ? '更新しました' : '登録しました')
     onCommitted()
   }
 
@@ -190,14 +195,18 @@ export default function SlotPanel({ slotKey, dateKey, meals, selectedMeal, notio
     })),
   ]
 
-  const diningRows = diningResults.map((r) => ({
-    key: `d-${r.placeId}`,
-    name: r.name,
-    sublabel: r.address || undefined,
-    icon: '📍',
-    place_id: r.placeId,
-    source: 'dining',
-  }))
+  const diningRows = diningResults.map((r) => {
+    const distance = formatDistance(r.distanceMeters)
+    const sublabel = [distance, r.address].filter(Boolean).join(' ・ ')
+    return {
+      key: `d-${r.placeId}`,
+      name: r.name,
+      sublabel: sublabel || undefined,
+      icon: '📍',
+      place_id: r.placeId,
+      source: 'dining',
+    }
+  })
 
   const results = mode === 'dining' ? diningRows : recipeResults
   const showFallback = searched && !loading && results.length === 0 && text.trim().length > 0

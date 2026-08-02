@@ -606,6 +606,38 @@ body {
   z-index: 30;
 }
 
+/* wishlist一覧画面はNavBar(下部タブ)が表示されたままなので、
+   その上に浮かせるよう底からのオフセットを大きくしている */
+.wishlist-add-btn-wrap {
+  position: fixed;
+  right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+
+.wishlist-view {
+  padding-bottom: 70px;
+}
+
+.wishlist-row-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wishlist-row-tap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px 12px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
 .commit-btn {
   border: none;
   background: var(--indigo);

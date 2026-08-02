@@ -34,6 +34,24 @@ create index if not exists meals_date_slot_idx on meals (date, slot);
 create index if not exists meals_name_idx on meals (name);
 create index if not exists meals_date_idx on meals (date);
 
+-- 食べたいものリスト(献立とは独立。献立に登録してもここからは消えない)
+create table if not exists wishlist (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  notion_page_id text,
+  notion_url text,
+  place_id text,
+  source text not null default 'manual' check (source in ('notion','manual','history','dining')),
+  created_at timestamptz not null default now()
+);
+
+alter table wishlist enable row level security;
+drop policy if exists "allow all for authenticated users" on wishlist;
+create policy "allow all for authenticated users" on wishlist
+  for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- 夫婦2人など、少人数で共有して使う想定のポリシーです。
 -- 「ログイン済みのユーザーであれば誰でも同じ献立データを読み書きできる」
 -- という設計にしています(個人ごとにデータを分離するものではありません)。

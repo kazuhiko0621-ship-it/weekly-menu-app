@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import WeekView from './components/WeekView.jsx'
 import PopularMeals from './components/PopularMeals.jsx'
+import WishlistScreen from './components/WishlistScreen.jsx'
+import WishlistAddScreen from './components/WishlistAddScreen.jsx'
 import NavBar from './components/NavBar.jsx'
 import LoginScreen from './components/LoginScreen.jsx'
 import MealEditScreen from './components/MealEditScreen.jsx'
@@ -12,6 +14,7 @@ export default function App() {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingDay, setEditingDay] = useState(null) // { date, dateKey, dowLabel } | null
+  const [addingWishlistItem, setAddingWishlistItem] = useState(false)
   // undefined = 確認中, null = 未ログイン, object = ログイン済みセッション
   const [session, setSession] = useState(undefined)
 
@@ -54,6 +57,17 @@ export default function App() {
     )
   }
 
+  if (addingWishlistItem) {
+    return (
+      <div className="app-shell">
+        <WishlistAddScreen
+          onBack={() => setAddingWishlistItem(false)}
+          onAdded={bumpRefresh}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className={`app-shell${view === 'week' && isCurrentWeek ? ' is-current-week' : ''}`}>
       <header className="app-header app-header-slim">
@@ -87,6 +101,9 @@ export default function App() {
           />
         )}
         {view === 'popular' && <PopularMeals onAdded={bumpRefresh} />}
+        {view === 'wishlist' && (
+          <WishlistScreen onAddNew={() => setAddingWishlistItem(true)} refreshKey={refreshKey} />
+        )}
       </main>
 
       <NavBar view={view} onChange={setView} />

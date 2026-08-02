@@ -5,7 +5,7 @@ import ManualIcon from './ManualIcon.jsx'
 import { EditIcon, DeleteIcon } from './ActionIcons.jsx'
 import MessageModal from './MessageModal.jsx'
 import { SLOTS } from '../utils/date.js'
-import { fetchMealsForWeek, deleteMeal, EACH_SOURCE } from '../utils/mealsApi.js'
+import { fetchMealsForWeek, deleteMeal, insertMeal, updateMeal, EACH_SOURCE } from '../utils/mealsApi.js'
 import { fetchNotionMeta } from '../utils/notion.js'
 
 // 献立入力画面。朝/昼/夜をタブで切り替え、
@@ -130,12 +130,14 @@ export default function MealEditScreen({ day, onBack }) {
       ) : (
         <SlotPanel
           key={activeSlot}
-          slotKey={activeSlot}
-          dateKey={day.dateKey}
           meals={mealsForActiveSlot}
           selectedMeal={selectedMeal}
           notionMeta={notionMeta}
           onMessage={setMessage}
+          onCommit={async (payload) => {
+            if (selectedMeal) await updateMeal(selectedMeal.id, payload)
+            else await insertMeal({ date: day.dateKey, slot: activeSlot, ...payload })
+          }}
           onCommitted={() => {
             setSelectedMealId(null)
             reloadMeals()
