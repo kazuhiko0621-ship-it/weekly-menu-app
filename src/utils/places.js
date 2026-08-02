@@ -7,7 +7,11 @@ export function mapsUrlForPlaceId(placeId) {
 }
 
 export async function searchRestaurants(query) {
-  if (!API_KEY || !query || query.trim().length === 0) return []
+  if (!API_KEY) {
+    console.warn('[places] VITE_GOOGLE_PLACES_API_KEY が設定されていません。')
+    return []
+  }
+  if (!query || query.trim().length === 0) return []
 
   try {
     const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {

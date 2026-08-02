@@ -31,6 +31,8 @@ export default function SlotPanel({ slotKey, dateKey, meals, selectedMeal, notio
   const [searched, setSearched] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState(null)
   const debounceRef = useRef(null)
+  const diningCacheRef = useRef(new Map())
+  const diningRequestIdRef = useRef(0)
 
   const categoryOptions = notionMeta?.category?.options ?? []
   const ratingOptions = notionMeta?.rating?.options ?? []
@@ -88,21 +90,37 @@ export default function SlotPanel({ slotKey, dateKey, meals, selectedMeal, notio
   }, [mode, text, selectedCategories, selectedRatings])
 
   // 外食検索(Googleマップの店舗名)
+  // Google APIの呼び出し回数を減らすため、
+  // ・最後の入力から1秒待ってから検索する(デバウンス)
+  // ・2文字未満では検索しない
+  // ・同じ文字列を再入力した場合はキャッシュを使い回す
+  // ・入力中に古いリクエストの結果は無視する
   useEffect(() => {
     if (mode !== 'dining') return
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (text.trim().length === 0) {
+    const q = text.trim()
+    if (q.length < 2) {
       setDiningResults([])
       setSearched(false)
       return
     }
+    const cacheKey = q.toLowerCase()
+    const cached = diningCacheRef.current.get(cacheKey)
+    if (cached) {
+      setDiningResults(cached)
+      setSearched(true)
+      return
+    }
     setLoading(true)
+    const requestId = ++diningRequestIdRef.current
     debounceRef.current = setTimeout(async () => {
-      const results = await searchRestaurants(text)
+      const results = await searchRestaurants(q)
+      if (requestId !== diningRequestIdRef.current) return // 古いリクエストの結果は無視
+      diningCacheRef.current.set(cacheKey, results)
       setDiningResults(results)
       setLoading(false)
       setSearched(true)
-    }, 300)
+    }, 1000)
     return () => clearTimeout(debounceRef.current)
   }, [mode, text])
 
