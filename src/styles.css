@@ -991,3 +991,178 @@ body {
   background: var(--surface);
   color: var(--ink);
 }
+
+/* ========================================
+   カレンダービュー(2週間表示)
+   ======================================== */
+
+.cal-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── ミニカレンダーグリッド ── */
+.cal-grid-wrap {
+  padding: 6px 8px 4px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.cal-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 3px;
+}
+
+.cal-dow {
+  text-align: center;
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 500;
+  padding: 1px 0;
+}
+.cal-dow.sat { color: #2a6eaa; }
+.cal-dow.sun { color: #a33; }
+
+.cal-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.cal-cell {
+  border: none;
+  border-radius: 6px;
+  padding: 3px 2px 4px;
+  text-align: center;
+  cursor: pointer;
+  min-height: 40px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.cal-cell.today { background: var(--bg-accent, #eaf0f7); }
+.cal-cell.today .cal-dn { color: var(--indigo); font-weight: 600; }
+.cal-cell.selected { background: var(--indigo); }
+.cal-cell.selected .cal-dn { color: #fff; }
+.cal-cell.move-target {
+  background: #eaf5ea;
+  outline: 1.5px dashed var(--moss);
+}
+.cal-cell.move-target .cal-dn { color: var(--moss); }
+.cal-cell.move-from {
+  background: #fef7e0;
+  outline: 1.5px solid #d4a017;
+}
+.cal-cell:hover:not(.selected):not(.move-target) { background: var(--paper); }
+
+.cal-dn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.cal-dn.sat { color: #2a6eaa; }
+.cal-dn.sun { color: #a33; }
+
+.cal-dots {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  min-height: 6px;
+  margin-top: 2px;
+}
+
+.cal-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* ── 移動モードヒントバー ── */
+.move-hint-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #eaf5ea;
+  border-bottom: 1px solid var(--moss);
+  font-size: 12px;
+  color: var(--moss);
+}
+
+.cancel-move-btn {
+  border: 1px solid var(--danger);
+  background: none;
+  color: var(--danger);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* ── 日付詳細パネル ── */
+.cal-detail {
+  flex: 1;
+  padding: 10px 12px 80px;
+}
+
+.cal-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.cal-detail-date {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--indigo-deep);
+}
+
+.cal-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cal-meal-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 4px;
+  border-top: 1px dashed var(--paper-line);
+  border-radius: 5px;
+}
+
+.cal-meal-row.is-moving {
+  background: #fef7e0;
+  outline: 1.5px solid #d4a017;
+  border-top-color: transparent;
+}
+
+.cal-slot-empty-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 4px;
+  border-top: 1px dashed var(--paper-line);
+}
+
+.slot-empty-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.grip-active {
+  color: var(--indigo) !important;
+}

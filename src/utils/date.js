@@ -42,6 +42,30 @@ export function getWeekDays(weekStart) {
   })
 }
 
+// 2週間(14日分)の日付オブジェクトを返す
+export function getTwoWeekDays(weekStart) {
+  return Array.from({ length: 14 }, (_, i) => {
+    const d = addDays(weekStart, i)
+    return {
+      date: d,
+      dateKey: toDateKey(d),
+      dowLabel: DOW_LABEL[i % 7],
+      dowIndex: i % 7,
+    }
+  })
+}
+
+// 2週間の範囲ラベル: "8/3(月) 〜 8/16(日)"
+export function formatTwoWeekRange(weekStart) {
+  const end = addDays(weekStart, 13)
+  const dows = ['月', '火', '水', '木', '金', '土', '日']
+  const fmt = (d) => {
+    const dow = dows[(d.getDay() + 6) % 7]
+    return `${d.getMonth() + 1}/${d.getDate()}(${dow})`
+  }
+  return `${fmt(weekStart)} 〜 ${fmt(end)}`
+}
+
 export function formatWeekRange(weekStart) {
   const end = addDays(weekStart, 6)
   const fmt = (d) => `${d.getMonth() + 1}/${d.getDate()}`

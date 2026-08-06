@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import WeekView from './components/WeekView.jsx'
+import CalendarView from './components/CalendarView.jsx'
 import PopularMeals from './components/PopularMeals.jsx'
 import WishlistScreen from './components/WishlistScreen.jsx'
 import WishlistAddScreen from './components/WishlistAddScreen.jsx'
@@ -7,15 +7,14 @@ import NavBar from './components/NavBar.jsx'
 import LoginScreen from './components/LoginScreen.jsx'
 import MealEditScreen from './components/MealEditScreen.jsx'
 import { supabase } from './supabaseClient.js'
-import { getWeekStart, addDays, formatWeekRange } from './utils/date.js'
+import { getWeekStart, addDays, formatTwoWeekRange } from './utils/date.js'
 
 export default function App() {
   const [view, setView] = useState('week')
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
   const [refreshKey, setRefreshKey] = useState(0)
-  const [editingDay, setEditingDay] = useState(null) // { date, dateKey, dowLabel } | null
+  const [editingDay, setEditingDay] = useState(null)
   const [addingWishlistItem, setAddingWishlistItem] = useState(false)
-  // undefined = 確認中, null = 未ログイン, object = ログイン済みセッション
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
@@ -25,57 +24,44 @@ export default function App() {
   }, [])
 
   const bumpRefresh = () => setRefreshKey((k) => k + 1)
-  const isCurrentWeek = weekStart.getTime() === getWeekStart(new Date()).getTime()
+  const currentWeekStart = getWeekStart(new Date())
+  const isCurrentRange = weekStart.getTime() === currentWeekStart.getTime()
 
   function goToCurrentWeek() {
-    setWeekStart(getWeekStart(new Date()))
+    setWeekStart(currentWeekStart)
     setView('week')
     setEditingDay(null)
   }
 
   if (session === undefined) {
-    return (
-      <div className="app-shell">
-        <p className="loading-text">読み込み中…</p>
-      </div>
-    )
+    return <div className="app-shell"><p className="loading-text">読み込み中…</p></div>
   }
-
   if (!session) {
-    return (
-      <div className="app-shell">
-        <LoginScreen />
-      </div>
-    )
+    return <div className="app-shell"><LoginScreen /></div>
   }
-
   if (editingDay) {
     return (
       <div className="app-shell">
-        <MealEditScreen day={editingDay} onBack={() => setEditingDay(null)} />
+        <MealEditScreen day={editingDay} onBack={() => { setEditingDay(null); bumpRefresh() }} />
       </div>
     )
   }
-
   if (addingWishlistItem) {
     return (
       <div className="app-shell">
-        <WishlistAddScreen
-          onBack={() => setAddingWishlistItem(false)}
-          onAdded={bumpRefresh}
-        />
+        <WishlistAddScreen onBack={() => setAddingWishlistItem(false)} onAdded={bumpRefresh} />
       </div>
     )
   }
 
   return (
-    <div className={`app-shell${view === 'week' && isCurrentWeek ? ' is-current-week' : ''}`}>
+    <div className={`app-shell${view === 'week' && isCurrentRange ? ' is-current-week' : ''}`}>
       <header className="app-header app-header-slim">
         <div className="app-header-date-nav">
           <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, -7))} aria-label="前の週">
             ‹
           </button>
-          <span className="app-header-date">{formatWeekRange(weekStart)}</span>
+          <span className="app-header-date">{formatTwoWeekRange(weekStart)}</span>
           <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, 7))} aria-label="次の週">
             ›
           </button>
@@ -92,7 +78,7 @@ export default function App() {
 
       <main className="app-main">
         {view === 'week' && (
-          <WeekView
+          <CalendarView
             weekStart={weekStart}
             onPrevWeek={() => setWeekStart((d) => addDays(d, -7))}
             onNextWeek={() => setWeekStart((d) => addDays(d, 7))}
