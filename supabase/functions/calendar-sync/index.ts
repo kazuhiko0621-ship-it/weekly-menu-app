@@ -67,7 +67,7 @@ function buildEvent(meal: any) {
   const time = SLOT_TIME[meal.slot] ?? SLOT_TIME.dinner
   const name = meal.source === 'each' ? '各自' : meal.name
   const mapsUrl = meal.source === 'dining' && meal.place_id
-    ? `https://www.google.com/maps/place/?q=place_id:${meal.place_id}`
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${meal.place_id}`
     : undefined
 
   return {

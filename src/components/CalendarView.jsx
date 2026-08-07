@@ -5,7 +5,7 @@ import GripIcon from './GripIcon.jsx'
 import MessageModal from './MessageModal.jsx'
 import { SLOTS, getTwoWeekDays, toDateKey, isToday } from '../utils/date.js'
 import { fetchMealsForWeek, moveMealToDate, EACH_SOURCE } from '../utils/mealsApi.js'
-import { mapsUrlForPlaceId } from '../utils/places.js'
+import { mapsUrlForPlace } from '../utils/places.js'
 
 const DOW_HEADERS = ['月', '火', '水', '木', '金', '土', '日']
 
@@ -98,9 +98,16 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
   }
 
   // カレンダーセルの合計献立数(ドット表示用)
-  function slotDots(dateKey) {
+  // 各セルに表示する献立名(朝→昼→夜の順で、そのコマの最初の1件を表示名として使う)
+  function slotPreviewNames(dateKey) {
     const dayMeals = meals.filter((m) => m.date === dateKey)
-    return SLOTS.map((s) => dayMeals.some((m) => m.slot === s.key))
+    return SLOTS.map((s) => {
+      const m = dayMeals.find((x) => x.slot === s.key)
+      if (!m) return null
+      if (m.source === EACH_SOURCE) return '各自'
+      if (m.source === 'dining') return m.name.replace(/^外食:/, '')
+      return m.name
+    })
   }
 
   return (
@@ -115,7 +122,7 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
         {[0, 1].map((week) => (
           <div key={week} className="cal-week-row">
             {days.slice(week * 7, week * 7 + 7).map((day) => {
-              const dots = slotDots(day.dateKey)
+              const names = slotPreviewNames(day.dateKey)
               const isSelected = day.dateKey === selectedDateKey
               const isTod = isToday(day.dateKey)
               const isMoveTarget = !!movingMeal && day.dateKey !== movingMeal.fromDateKey
@@ -138,14 +145,16 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
                   <span className={`cal-dn${isSat ? ' sat' : isSun ? ' sun' : ''}`}>
                     {day.date.getDate()}
                   </span>
-                  <span className="cal-dots">
-                    {dots.map((filled, i) =>
-                      filled ? (
+                  <span className="cal-names">
+                    {names.map((name, i) =>
+                      name ? (
                         <span
                           key={i}
-                          className="cal-dot"
-                          style={{ background: isSelected && !movingMeal ? '#fff' : DOT_COLORS[i] }}
-                        />
+                          className="cal-name-line"
+                          style={{ color: isSelected && !movingMeal ? '#fff' : DOT_COLORS[i] }}
+                        >
+                          {name}
+                        </span>
                       ) : null
                     )}
                   </span>
@@ -197,7 +206,7 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
               return slotMeals.map((m) => {
                 const isEach = m.source === EACH_SOURCE
                 const isDining = m.source === 'dining'
-                const linkUrl = m.notion_url || (isDining && m.place_id ? mapsUrlForPlaceId(m.place_id) : null)
+                const linkUrl = m.notion_url || (isDining && m.place_id ? mapsUrlForPlace(m.name, m.place_id) : null)
                 const icon = isDining ? '📍' : m.notion_url ? <NotionIcon /> : <ManualIcon />
                 const isMovingThis = movingMeal?.id === m.id
                 return (

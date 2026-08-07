@@ -40,6 +40,7 @@ export default function SlotPanel({
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState(null)
+  const [saving, setSaving] = useState(false)
   const debounceRef = useRef(null)
   const diningCacheRef = useRef(new Map())
   const diningRequestIdRef = useRef(0)
@@ -152,6 +153,7 @@ export default function SlotPanel({
   }
 
   async function handleCommit() {
+    if (saving) return
     let payload
     if (mode === 'each') {
       payload = { name: '各自', notion_page_id: null, notion_url: null, place_id: null, source: EACH_SOURCE }
@@ -166,9 +168,14 @@ export default function SlotPanel({
       }
     }
 
-    await onCommit(payload)
-    onMessage(selectedMeal ? '更新しました' : '登録しました')
-    onCommitted()
+    setSaving(true)
+    try {
+      await onCommit(payload)
+      onMessage(selectedMeal ? '更新しました' : '登録しました')
+      onCommitted()
+    } finally {
+      setSaving(false)
+    }
   }
 
   // 「各自」が既に登録されている場合、新規登録はできない(更新対象として選んでいる場合を除く)
@@ -336,10 +343,10 @@ export default function SlotPanel({
         <button
           type="button"
           className="commit-btn"
-          disabled={mode !== 'each' && !selectedCandidate}
+          disabled={saving || (mode !== 'each' && !selectedCandidate)}
           onClick={handleCommit}
         >
-          {selectedMeal ? '更新' : '登録'}
+          {saving ? '処理中…' : selectedMeal ? '更新' : '登録'}
         </button>
       </div>
     </div>

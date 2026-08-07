@@ -5,7 +5,7 @@ import { DeleteIcon } from './ActionIcons.jsx'
 import { SLOTS, toDateKey } from '../utils/date.js'
 import { fetchWishlist, deleteWishlistItem } from '../utils/wishlistApi.js'
 import { insertMeal } from '../utils/mealsApi.js'
-import { mapsUrlForPlaceId } from '../utils/places.js'
+import { mapsUrlForPlace } from '../utils/places.js'
 
 // 食べたいものリスト。献立とは独立したリストで、人気献立の集計対象にもならない。
 // 行を選ぶと日付・コマを指定して献立に追加できる(追加してもリストからは消えない)。
@@ -67,7 +67,7 @@ export default function WishlistScreen({ onAddNew, refreshKey }) {
         <div className="popular-list">
           {items.map((item) => {
             const isDining = item.source === 'dining'
-            const linkUrl = item.notion_url || (isDining && item.place_id ? mapsUrlForPlaceId(item.place_id) : null)
+            const linkUrl = item.notion_url || (isDining && item.place_id ? mapsUrlForPlace(item.name, item.place_id) : null)
             const icon = isDining ? '📍' : item.notion_url ? <NotionIcon /> : <ManualIcon />
             return (
               <div className="popular-row" key={item.id}>

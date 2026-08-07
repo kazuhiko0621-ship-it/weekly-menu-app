@@ -2,8 +2,13 @@
 // APIキーはブラウザから直接呼び出す(HTTPリファラー制限で保護する想定)。
 const API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
 
-export function mapsUrlForPlaceId(placeId) {
-  return `https://www.google.com/maps/place/?q=place_id:${placeId}`
+// Googleが推奨する形式(query + query_place_id)でリンクを作る。
+// place_idだけを渡す形式(q=place_id:...)はiOSアプリへの遷移時に
+// 「一致する検索結果が見つかりませんでした」となることがあるため、
+// 店名も一緒に渡して確実にヒットさせる。
+export function mapsUrlForPlace(name, placeId) {
+  const params = new URLSearchParams({ api: '1', query: name || '', query_place_id: placeId })
+  return `https://www.google.com/maps/search/?${params.toString()}`
 }
 
 export function formatDistance(meters) {
@@ -50,7 +55,9 @@ export async function searchRestaurants(query) {
     input: query.trim(),
     languageCode: 'ja',
     regionCode: 'jp',
-    includedPrimaryTypes: ['restaurant'],
+    // 以前は includedPrimaryTypes: ['restaurant'] で飲食店のみに絞り込んでいたが、
+    // スパ・レジャー施設なども検索したいという要望があったため、
+    // 種別による絞り込みは行わず、Google側の関連度判定に任せる
   }
   if (origin) {
     body.origin = origin

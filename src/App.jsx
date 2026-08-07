@@ -25,7 +25,6 @@ export default function App() {
 
   const bumpRefresh = () => setRefreshKey((k) => k + 1)
   const currentWeekStart = getWeekStart(new Date())
-  const isCurrentRange = weekStart.getTime() === currentWeekStart.getTime()
 
   function goToCurrentWeek() {
     setWeekStart(currentWeekStart)
@@ -55,7 +54,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell${view === 'week' && isCurrentRange ? ' is-current-week' : ''}`}>
+    <div className="app-shell">
       <header className="app-header app-header-slim">
         <div className="app-header-date-nav">
           <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, -7))} aria-label="前の週">

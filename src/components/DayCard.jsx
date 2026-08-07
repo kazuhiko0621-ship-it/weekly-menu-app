@@ -3,7 +3,7 @@ import ManualIcon from './ManualIcon.jsx'
 import GripIcon from './GripIcon.jsx'
 import { SLOTS } from '../utils/date.js'
 import { EACH_SOURCE } from '../utils/mealsApi.js'
-import { mapsUrlForPlaceId } from '../utils/places.js'
+import { mapsUrlForPlace } from '../utils/places.js'
 
 // 1日分のカード(参照専用)。登録済みのコマだけ表示し、
 // 同じコマに複数件登録されている場合はすべて表示する。
@@ -49,7 +49,7 @@ export default function DayCard({
           mealsBySlot[s.key].map((m) => {
             const isEach = m.source === EACH_SOURCE
             const isDining = m.source === 'dining'
-            const linkUrl = m.notion_url || (isDining && m.place_id ? mapsUrlForPlaceId(m.place_id) : null)
+            const linkUrl = m.notion_url || (isDining && m.place_id ? mapsUrlForPlace(m.name, m.place_id) : null)
             const icon = isDining ? '📍' : m.notion_url ? <NotionIcon /> : <ManualIcon />
             return (
               <div key={m.id} className="day-card-row">
