@@ -34,6 +34,24 @@ create index if not exists meals_date_slot_idx on meals (date, slot);
 create index if not exists meals_name_idx on meals (name);
 create index if not exists meals_date_idx on meals (date);
 
+-- 買い物リスト(常に最新の1回分だけを保持する単一レコード)
+create table if not exists shopping_list (
+  id text primary key default 'current',
+  start_date date not null,
+  end_date date not null,
+  generated_at timestamptz not null default now(),
+  items jsonb not null,
+  warnings jsonb,
+  recipe_summary jsonb
+);
+
+alter table shopping_list enable row level security;
+drop policy if exists "allow all for authenticated users" on shopping_list;
+create policy "allow all for authenticated users" on shopping_list
+  for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- 食べたいものリスト(献立とは独立。献立に登録してもここからは消えない)
 create table if not exists wishlist (
   id uuid primary key default gen_random_uuid(),

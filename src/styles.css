@@ -1161,3 +1161,97 @@ body {
 .grip-active {
   color: var(--indigo) !important;
 }
+
+/* ========================================
+   買い物リスト
+   ======================================== */
+
+.shopping-entry-row {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.range-picker-body {
+  padding: 16px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-tilde {
+  color: var(--ink-soft);
+}
+
+.range-hint {
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.shopping-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.shopping-warning {
+  background: #fef0e6;
+  border: 1px solid #e0a860;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.shopping-warning p {
+  margin: 0;
+  font-size: 12px;
+  color: #9c5a1a;
+}
+
+.shopping-section {
+  border-top: 1px solid var(--paper-line);
+  padding-top: 8px;
+}
+
+.shopping-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  border-bottom: 1px dashed var(--paper-line);
+  cursor: pointer;
+}
+
+.shopping-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.shopping-row.checked .shopping-name,
+.shopping-row.checked .shopping-qty {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+
+.shopping-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.shopping-qty {
+  font-size: 12px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+  text-align: right;
+}

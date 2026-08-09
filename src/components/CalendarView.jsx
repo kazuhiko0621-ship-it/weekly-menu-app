@@ -12,7 +12,7 @@ const DOW_HEADERS = ['月', '火', '水', '木', '金', '土', '日']
 // ドット色(朝=青/昼=橙/夜=赤紫)
 const DOT_COLORS = ['#3a7bd5', '#e07820', '#b03060']
 
-export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEditDay, refreshKey }) {
+export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEditDay, refreshKey, onOpenShoppingList }) {
   const days = getTwoWeekDays(weekStart)
   const dateKeys = days.map((d) => d.dateKey)
 
@@ -164,6 +164,14 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
           </div>
         ))}
       </div>
+
+      {!movingMeal && (
+        <div className="shopping-entry-row">
+          <button type="button" className="header-btn" onClick={onOpenShoppingList}>
+            🛒 買い物リスト
+          </button>
+        </div>
+      )}
 
       {movingMeal && (
         <div className="move-hint-bar">

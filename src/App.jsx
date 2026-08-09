@@ -3,6 +3,8 @@ import CalendarView from './components/CalendarView.jsx'
 import PopularMeals from './components/PopularMeals.jsx'
 import WishlistScreen from './components/WishlistScreen.jsx'
 import WishlistAddScreen from './components/WishlistAddScreen.jsx'
+import ShoppingRangeScreen, { defaultRangeFromWeekStart } from './components/ShoppingRangeScreen.jsx'
+import ShoppingListScreen from './components/ShoppingListScreen.jsx'
 import NavBar from './components/NavBar.jsx'
 import LoginScreen from './components/LoginScreen.jsx'
 import MealEditScreen from './components/MealEditScreen.jsx'
@@ -15,6 +17,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingDay, setEditingDay] = useState(null)
   const [addingWishlistItem, setAddingWishlistItem] = useState(false)
+  const [shoppingScreen, setShoppingScreen] = useState(null) // null | 'range' | 'list'
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
@@ -52,6 +55,29 @@ export default function App() {
       </div>
     )
   }
+  if (shoppingScreen === 'range') {
+    const { start, end } = defaultRangeFromWeekStart(weekStart)
+    return (
+      <div className="app-shell">
+        <ShoppingRangeScreen
+          defaultStart={start}
+          defaultEnd={end}
+          onBack={() => setShoppingScreen(null)}
+          onGenerated={() => setShoppingScreen('list')}
+        />
+      </div>
+    )
+  }
+  if (shoppingScreen === 'list') {
+    return (
+      <div className="app-shell">
+        <ShoppingListScreen
+          onBack={() => setShoppingScreen(null)}
+          onRegenerate={() => setShoppingScreen('range')}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="app-shell">
@@ -83,6 +109,7 @@ export default function App() {
             onNextWeek={() => setWeekStart((d) => addDays(d, 7))}
             onEditDay={setEditingDay}
             refreshKey={refreshKey}
+            onOpenShoppingList={() => setShoppingScreen('list')}
           />
         )}
         {view === 'popular' && <PopularMeals onAdded={bumpRefresh} />}

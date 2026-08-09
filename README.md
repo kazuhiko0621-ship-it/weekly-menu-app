@@ -184,6 +184,17 @@ npm run dev
 
 ## 既知の制限・改善ポイント
 
+- 買い物リスト機能の追加に伴い、新しく`shopping_list`テーブルを作成し、新しいEdge Function `shopping-list` を追加しています。反映には以下の両方が必要です
+  ```powershell
+  supabase functions deploy shopping-list
+  ```
+  ```
+  Supabase SQL Editorで supabase/schema.sql を再実行
+  ```
+  Notion側の秘密情報(`NOTION_TOKEN`)は`notion-search`と共用のため、新しいsecretsの追加は不要です
+- 材料の自動集計は、Notionのレシピページに **「機械用YAML」という名前のテキスト列**があり、その中に`schema: notion-recipe-ingredients/v1`形式のYAMLが入っていることを前提にしています。この列が無い/空のレシピは、警告として一覧に表示されるだけでスキップされます(リスト作成自体は失敗しません)
+- 材料の数量合算は、同じ食材名・同じ単位のもの同士のみ行います。単位が異なる場合(例:醤油が「大さじ」表記と「ml」表記で混在)は合算せず別々に表示されるため、必要に応じて手動で調整してください
+
 - 「食べたいものリスト」機能の追加に伴い、新しく`wishlist`テーブルを作成しています。**`supabase/schema.sql`の再実行**で反映されます
 - 外食検索の「近い順」表示は、ブラウザの位置情報許可が必要です。許可されなかった/取得できなかった場合は、通常の(距離を考慮しない)検索結果にフォールバックします
 
