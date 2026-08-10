@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { toDateKey, addDays } from '../utils/date.js'
 import { generateShoppingList, saveShoppingList } from '../utils/shoppingListApi.js'
 
-// 買い物リストの生成範囲(開始日・終了日)を選ぶ画面
 export default function ShoppingRangeScreen({ defaultStart, defaultEnd, onBack, onGenerated }) {
   const [startDate, setStartDate] = useState(defaultStart)
   const [endDate, setEndDate] = useState(defaultEnd)
@@ -30,42 +29,40 @@ export default function ShoppingRangeScreen({ defaultStart, defaultEnd, onBack, 
   }
 
   return (
-    <div className="edit-screen">
-      <div className="edit-screen-sticky">
-        <div className="edit-screen-head">
-          <button type="button" className="back-btn" onClick={onBack} aria-label="戻る">
-            ‹ 戻る
-          </button>
-          <span className="edit-screen-date">買い物リストを作る</span>
-        </div>
+    <div className="m3-screen">
+      <div className="m3-top-app-bar">
+        <button type="button" className="m3-icon-button" onClick={onBack} aria-label="戻る">←</button>
+        <span className="m3-top-app-bar-title">買い物リストを作る</span>
       </div>
 
-      <div className="range-picker-body">
-        <p className="area-label">対象期間</p>
-        <div className="range-inputs">
-          <input
-            type="date"
-            className="date-input"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <span className="range-tilde">〜</span>
-          <input
-            type="date"
-            className="date-input"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
+      <div className="m3-content">
+        <p className="m3-group-header">対象期間</p>
+        <div className="m3-card m3-card-padded">
+          <div className="m3-range-inputs">
+            <input
+              type="date"
+              className="m3-text-field"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <span className="m3-range-tilde">〜</span>
+            <input
+              type="date"
+              className="m3-text-field"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
         </div>
 
-        <p className="range-hint">
-          この期間に登録されている、Notionのレシピから作った献立の材料を集計します。
-          「外食」「各自」「手入力」の献立は対象外です。
+        <p className="m3-supporting-text">
+          この期間の献立のうち、Notionのレシピから登録したものを対象に、
+          レシピ材料明細から材料を集計します。外食・各自・手入力の献立は対象外です。
         </p>
 
-        {error && <p className="login-error">{error}</p>}
+        {error && <div className="m3-banner m3-banner-error">{error}</div>}
 
-        <button type="button" className="btn btn-primary" disabled={generating} onClick={handleGenerate}>
+        <button type="button" className="m3-filled-button" disabled={generating} onClick={handleGenerate}>
           {generating ? '作成中…' : 'この期間で作成する'}
         </button>
       </div>

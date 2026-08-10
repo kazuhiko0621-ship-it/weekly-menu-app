@@ -1,164 +1,213 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchShoppingList, toggleShoppingItem } from '../utils/shoppingListApi.js'
 
-function Section({ title, children, count }) {
-  if (count === 0) return null
+// 材料1件の行(タップで諸元となった明細を展開)
+function IngredientRow({ item, onToggle, busy }) {
+  const [open, setOpen] = useState(false)
+  const qtyLabel =
+    item.totalQty != null && item.totalQty > 0
+      ? `${Math.round(item.totalQty * 100) / 100}${item.unit ?? ''}`
+      : item.hasUnknownQty
+        ? '適量'
+        : ''
+
   return (
-    <div className="shopping-section">
-      <p className="area-label">{title}</p>
-      {children}
+    <div className={`m3-list-item-wrap${item.checked ? ' is-checked' : ''}`}>
+      <div className="m3-list-item">
+        <input
+          type="checkbox"
+          className="m3-checkbox"
+          checked={!!item.checked}
+          disabled={busy}
+          onChange={() => onToggle(item, !item.checked)}
+        />
+        <button type="button" className="m3-list-body" onClick={() => setOpen((v) => !v)}>
+          <span className="m3-list-title">
+            {item.name}
+            {item.skip && <span className="m3-chip-mini">計上不要</span>}
+          </span>
+          <span className="m3-list-meta">
+            {qtyLabel}
+            {item.hasUnknownQty && item.totalQty > 0 ? ' +適量' : ''}
+          </span>
+          <span className={`m3-expand-icon${open ? ' open' : ''}`}>▾</span>
+        </button>
+      </div>
+
+      {open && (
+        <div className="m3-detail-panel">
+          {item.details.map((d, i) => (
+            <div key={i} className="m3-detail-row">
+              {d.recipeUrl ? (
+                <a className="m3-detail-recipe" href={d.recipeUrl} target="_blank" rel="noreferrer">
+                  {d.recipeTitle}
+                  {d.occurrences > 1 ? ` ×${d.occurrences}` : ''}
+                </a>
+              ) : (
+                <span className="m3-detail-recipe">{d.recipeTitle}</span>
+              )}
+              <div className="m3-detail-sub">
+                <span>{d.qty != null ? `${d.qty}${item.unit ?? ''}` : '適量'}</span>
+                {d.rawText && <span className="m3-detail-raw">{d.rawText}</span>}
+              </div>
+              {d.note && <p className="m3-detail-note">{d.note}</p>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
 export default function ShoppingListScreen({ onBack, onRegenerate }) {
-  const [list, setList] = useState(undefined) // undefined=読み込み中, null=未生成
-  const [busyKey, setBusyKey] = useState(null)
+  const [list, setList] = useState(undefined)
+  const [busyId, setBusyId] = useState(null)
+  const [showSkipped, setShowSkipped] = useState(false)
+  const [sortMode, setSortMode] = useState('category') // 'category' | 'recipe'
 
-  function load() {
+  useEffect(() => {
     fetchShoppingList().then(setList)
-  }
+  }, [])
 
-  useEffect(load, [])
-
-  async function handleToggle(section, item) {
-    setBusyKey(item.key)
-    // 楽観的に画面を先に更新
-    setList((prev) => {
-      const items = { ...prev.items }
-      items[section] = items[section].map((it) => (it.key === item.key ? { ...it, checked: !it.checked } : it))
-      return { ...prev, items }
-    })
+  async function handleToggle(item, checked) {
+    setBusyId(item.ingredientId)
+    setList((prev) => ({
+      ...prev,
+      items: {
+        groups: prev.items.groups.map((g) => ({
+          ...g,
+          items: g.items.map((it) => (it.ingredientId === item.ingredientId ? { ...it, checked } : it)),
+        })),
+      },
+    }))
     try {
-      await toggleShoppingItem(section, item.key, !item.checked)
+      await toggleShoppingItem(item.ingredientId, checked)
     } finally {
-      setBusyKey(null)
+      setBusyId(null)
     }
   }
 
+  // 表示用のグループを組み立てる(カテゴリ順 or レシピ順)
+  const displayGroups = useMemo(() => {
+    if (!list?.items?.groups) return []
+    const allItems = list.items.groups.flatMap((g) => g.items.map((it) => ({ ...it, category: g.category })))
+    const visible = allItems.filter((it) => showSkipped || !it.skip)
+
+    if (sortMode === 'category') {
+      const out = []
+      for (const g of list.items.groups) {
+        const items = g.items.filter((it) => showSkipped || !it.skip)
+        if (items.length > 0) out.push({ label: g.category, items })
+      }
+      return out
+    }
+
+    // レシピ順: 材料が複数レシピに登場する場合は、それぞれのレシピ配下に表示する
+    const byRecipe = new Map()
+    for (const it of visible) {
+      for (const d of it.details) {
+        const key = d.recipeTitle
+        const entry = byRecipe.get(key) ?? { label: key, url: d.recipeUrl, items: [] }
+        if (!entry.items.some((x) => x.ingredientId === it.ingredientId)) entry.items.push(it)
+        byRecipe.set(key, entry)
+      }
+    }
+    return Array.from(byRecipe.values())
+  }, [list, showSkipped, sortMode])
+
+  const header = (
+    <div className="m3-top-app-bar">
+      <button type="button" className="m3-icon-button" onClick={onBack} aria-label="戻る">←</button>
+      <span className="m3-top-app-bar-title">買い物リスト</span>
+    </div>
+  )
+
   if (list === undefined) {
-    return (
-      <div className="edit-screen">
-        <div className="edit-screen-sticky">
-          <div className="edit-screen-head">
-            <button type="button" className="back-btn" onClick={onBack} aria-label="戻る">‹ 戻る</button>
-            <span className="edit-screen-date">買い物リスト</span>
-          </div>
-        </div>
-        <p className="loading-text">読み込み中…</p>
-      </div>
-    )
+    return <div className="m3-screen">{header}<p className="m3-empty">読み込み中…</p></div>
   }
 
   if (!list) {
     return (
-      <div className="edit-screen">
-        <div className="edit-screen-sticky">
-          <div className="edit-screen-head">
-            <button type="button" className="back-btn" onClick={onBack} aria-label="戻る">‹ 戻る</button>
-            <span className="edit-screen-date">買い物リスト</span>
-          </div>
-        </div>
-        <div className="range-picker-body">
-          <p className="empty-text">まだ買い物リストが作成されていません。</p>
-          <button type="button" className="btn btn-primary" onClick={onRegenerate}>作成する</button>
+      <div className="m3-screen">
+        {header}
+        <div className="m3-content">
+          <p className="m3-empty">まだ買い物リストが作成されていません。</p>
+          <button type="button" className="m3-filled-button" onClick={onRegenerate}>作成する</button>
         </div>
       </div>
     )
   }
 
-  const { toBuy = [], rangeItems = [], optionalItems = [], unclearItems = [] } = list.items ?? {}
   const warnings = list.warnings ?? []
-  const recipeSummary = list.recipe_summary ?? []
+  const totalVisible = displayGroups.reduce((n, g) => n + g.items.length, 0)
 
   return (
-    <div className="edit-screen">
-      <div className="edit-screen-sticky">
-        <div className="edit-screen-head">
-          <button type="button" className="back-btn" onClick={onBack} aria-label="戻る">‹ 戻る</button>
-          <span className="edit-screen-date">買い物リスト</span>
+    <div className="m3-screen">
+      {header}
+
+      <div className="m3-toolbar">
+        <div className="m3-segmented">
+          <button
+            type="button"
+            className={`m3-segment${sortMode === 'category' ? ' selected' : ''}`}
+            onClick={() => setSortMode('category')}
+          >
+            カテゴリ順
+          </button>
+          <button
+            type="button"
+            className={`m3-segment${sortMode === 'recipe' ? ' selected' : ''}`}
+            onClick={() => setSortMode('recipe')}
+          >
+            レシピ順
+          </button>
         </div>
+        <label className="m3-switch-row">
+          <span className="m3-switch-label">計上不要も表示</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showSkipped}
+            className={`m3-switch${showSkipped ? ' on' : ''}`}
+            onClick={() => setShowSkipped((v) => !v)}
+          >
+            <span className="m3-switch-thumb" />
+          </button>
+        </label>
       </div>
 
-      <div className="range-picker-body">
-        <p className="shopping-meta">
-          対象期間: {list.start_date} 〜 {list.end_date}
-          <br />
-          作成日時: {new Date(list.generated_at).toLocaleString('ja-JP')}
+      <div className="m3-content">
+        <p className="m3-supporting-text">
+          {list.start_date} 〜 {list.end_date}ぶん・{totalVisible}品
         </p>
-        {recipeSummary.length > 0 && (
-          <p className="shopping-meta">
-            対象レシピ: {recipeSummary.map((r) => `${r.title}×${r.occurrences}`).join('、')}
-          </p>
-        )}
-        <button type="button" className="header-btn" onClick={onRegenerate}>
-          条件を変えて作り直す
-        </button>
 
         {warnings.length > 0 && (
-          <div className="shopping-warning">
-            {warnings.map((w, i) => (
-              <p key={i}>⚠️ {w.recipeTitle}: {w.reason}</p>
-            ))}
+          <div className="m3-banner">
+            材料明細が未登録のレシピがあります: {warnings.join('、')}
           </div>
         )}
 
-        <Section title="買うもの" count={toBuy.length}>
-          {toBuy.map((it) => (
-            <label key={it.key} className={`shopping-row${it.checked ? ' checked' : ''}`}>
-              <input
-                type="checkbox"
-                checked={it.checked}
-                disabled={busyKey === it.key}
-                onChange={() => handleToggle('toBuy', it)}
-              />
-              <span className="shopping-name">{it.name}</span>
-              <span className="shopping-qty">{it.qty}{it.unit}</span>
-            </label>
-          ))}
-        </Section>
+        {displayGroups.length === 0 && <p className="m3-empty">表示できる材料がありません。</p>}
 
-        <Section title="目安(レシピごと)" count={rangeItems.length}>
-          {rangeItems.map((it) => (
-            <label key={it.key} className={`shopping-row${it.checked ? ' checked' : ''}`}>
-              <input
-                type="checkbox"
-                checked={it.checked}
-                disabled={busyKey === it.key}
-                onChange={() => handleToggle('rangeItems', it)}
-              />
-              <span className="shopping-name">{it.name}</span>
-              <span className="shopping-qty">
-                {it.qtyMin ?? ''}〜{it.qtyMax ?? ''}{it.unit}
-                {it.occurrences > 1 ? ` ×${it.occurrences}` : ''}
-              </span>
-            </label>
-          ))}
-        </Section>
-
-        <Section title="あれば使うもの" count={optionalItems.length}>
-          {optionalItems.map((it) => (
-            <label key={it.key} className={`shopping-row${it.checked ? ' checked' : ''}`}>
-              <input
-                type="checkbox"
-                checked={it.checked}
-                disabled={busyKey === it.key}
-                onChange={() => handleToggle('optionalItems', it)}
-              />
-              <span className="shopping-name">{it.name}</span>
-              <span className="shopping-qty">{it.notes?.join(' / ')}</span>
-            </label>
-          ))}
-        </Section>
-
-        <Section title="要確認" count={unclearItems.length}>
-          {unclearItems.map((it) => (
-            <div key={it.key} className="shopping-row">
-              <span className="shopping-name">{it.name}</span>
-              <span className="shopping-qty">{it.raw}</span>
+        {displayGroups.map((g) => (
+          <div key={g.label} className="m3-group">
+            <p className="m3-group-header">{g.label}</p>
+            <div className="m3-card">
+              {g.items.map((it) => (
+                <IngredientRow
+                  key={`${g.label}-${it.ingredientId}`}
+                  item={it}
+                  onToggle={handleToggle}
+                  busy={busyId === it.ingredientId}
+                />
+              ))}
             </div>
-          ))}
-        </Section>
+          </div>
+        ))}
+
+        <button type="button" className="m3-tonal-button" onClick={onRegenerate}>
+          条件を変えて作り直す
+        </button>
       </div>
     </div>
   )
