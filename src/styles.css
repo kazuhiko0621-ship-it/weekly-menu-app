@@ -859,3 +859,65 @@ button { font-family: var(--font-sans); }
 }
 
 .combobox { position: relative; }
+
+/* ── 手動追加メモ ── */
+.m3-divider {
+  height: 1px;
+  background: var(--outline-variant);
+  margin: 8px 0;
+}
+
+.m3-group-subheader {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  margin: 6px 0 4px 4px;
+}
+
+.m3-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.m3-mic-button {
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--on-surface-variant);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+.m3-mic-button.listening {
+  background: var(--error-container);
+  border-color: var(--error);
+  animation: m3-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes m3-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+
+.m3-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.m3-listening-hint {
+  font-size: 13px;
+  color: var(--error);
+  margin: 10px 0 0;
+}
+
+.m3-extra-name { padding: 12px 0; }

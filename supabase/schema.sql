@@ -52,6 +52,23 @@ create policy "allow all for authenticated users" on shopping_list
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
 
+-- 手動追加の買い物メモ(音声入力/手入力)。
+-- 献立から作る買い物リストとは独立していて、リストを作り直しても消えない。
+create table if not exists shopping_extra_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  category text,
+  checked boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table shopping_extra_items enable row level security;
+drop policy if exists "allow all for authenticated users" on shopping_extra_items;
+create policy "allow all for authenticated users" on shopping_extra_items
+  for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- 食べたいものリスト(献立とは独立。献立に登録してもここからは消えない)
 create table if not exists wishlist (
   id uuid primary key default gen_random_uuid(),

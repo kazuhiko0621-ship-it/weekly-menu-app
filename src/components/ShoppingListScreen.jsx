@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import ExtraItemsSection from './ExtraItemsSection.jsx'
 import { fetchShoppingList, toggleShoppingItem } from '../utils/shoppingListApi.js'
 
 // 材料1件の行(タップで諸元となった明細を展開)
@@ -131,8 +132,13 @@ export default function ShoppingListScreen({ onBack, onRegenerate }) {
       <div className="m3-screen">
         {header}
         <div className="m3-content">
-          <p className="m3-empty">まだ買い物リストが作成されていません。</p>
-          <button type="button" className="m3-filled-button" onClick={onRegenerate}>作成する</button>
+          <p className="m3-supporting-text">
+            献立からの買い物リストはまだ作成されていません。
+          </p>
+          <button type="button" className="m3-filled-button" onClick={onRegenerate}>
+            献立から作成する
+          </button>
+          <ExtraItemsSection />
         </div>
       </div>
     )
@@ -208,6 +214,10 @@ export default function ShoppingListScreen({ onBack, onRegenerate }) {
         <button type="button" className="m3-tonal-button" onClick={onRegenerate}>
           条件を変えて作り直す
         </button>
+
+        <div className="m3-divider" />
+
+        <ExtraItemsSection />
       </div>
     </div>
   )
