@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ExtraItemsSection from './ExtraItemsSection.jsx'
 import { fetchShoppingList, toggleShoppingItem } from '../utils/shoppingListApi.js'
+import { fetchExtraItems } from '../utils/extraItemsApi.js'
 
 // 材料1件の行(タップで諸元となった明細を展開)
 function IngredientRow({ item, onToggle, busy }) {
@@ -65,9 +66,15 @@ export default function ShoppingListScreen({ onBack, onRegenerate }) {
   const [busyId, setBusyId] = useState(null)
   const [showSkipped, setShowSkipped] = useState(false)
   const [sortMode, setSortMode] = useState('category') // 'category' | 'recipe'
+  const [tab, setTab] = useState('menu') // 'menu' | 'extra'
+  const [extraCount, setExtraCount] = useState(0)
 
   useEffect(() => {
     fetchShoppingList().then(setList)
+    // タブのバッジ用に、手動登録の件数も最初に取得しておく
+    fetchExtraItems()
+      .then((data) => setExtraCount(data.length))
+      .catch(() => setExtraCount(0))
   }, [])
 
   async function handleToggle(item, checked) {
@@ -116,30 +123,77 @@ export default function ShoppingListScreen({ onBack, onRegenerate }) {
     return Array.from(byRecipe.values())
   }, [list, showSkipped, sortMode])
 
-  const header = (
-    <div className="m3-top-app-bar">
-      <button type="button" className="m3-icon-button" onClick={onBack} aria-label="戻る">←</button>
-      <span className="m3-top-app-bar-title">買い物リスト</span>
-    </div>
+  // タブのバッジ用: 献立から集計された材料の件数(重複を除いた実数)
+  const menuCount = useMemo(() => {
+    if (!list?.items?.groups) return 0
+    const ids = new Set()
+    for (const g of list.items.groups) {
+      for (const it of g.items) {
+        if (!showSkipped && it.skip) continue
+        ids.add(it.ingredientId)
+      }
+    }
+    return ids.size
+  }, [list, showSkipped])
+
+  const extraTabLabel = (
+    <>
+      手動登録
+      <span className={`m3-tab-badge${extraCount === 0 ? ' zero' : ''}`}>{extraCount}</span>
+    </>
   )
 
-  if (list === undefined) {
-    return <div className="m3-screen">{header}<p className="m3-empty">読み込み中…</p></div>
-  }
-
-  if (!list) {
+  function renderShell(children, { withTabs = true } = {}) {
     return (
       <div className="m3-screen">
-        {header}
-        <div className="m3-content">
-          <p className="m3-supporting-text">
-            献立からの買い物リストはまだ作成されていません。
-          </p>
-          <button type="button" className="m3-filled-button" onClick={onRegenerate}>
-            献立から作成する
-          </button>
-          <ExtraItemsSection />
+        <div className="m3-top-app-bar">
+          <button type="button" className="m3-icon-button" onClick={onBack} aria-label="戻る">←</button>
+          <span className="m3-top-app-bar-title">買い物リスト</span>
         </div>
+
+        {withTabs && (
+          <div className="m3-tabs">
+            <button
+              type="button"
+              className={`m3-tab${tab === 'menu' ? ' selected' : ''}`}
+              onClick={() => setTab('menu')}
+            >
+              献立から
+              <span className={`m3-tab-badge${menuCount === 0 ? ' zero' : ''}`}>{menuCount}</span>
+            </button>
+            <button
+              type="button"
+              className={`m3-tab${tab === 'extra' ? ' selected' : ''}`}
+              onClick={() => setTab('extra')}
+            >
+              {extraTabLabel}
+            </button>
+          </div>
+        )}
+
+        {children}
+      </div>
+    )
+  }
+
+  if (list === undefined) {
+    return renderShell(<p className="m3-empty">読み込み中…</p>, { withTabs: false })
+  }
+
+  // 献立リストが未作成でも「手動登録」タブは使えるようにする
+  if (!list) {
+    return renderShell(
+      <div className="m3-content">
+        {tab === 'menu' ? (
+          <>
+            <p className="m3-supporting-text">献立からの買い物リストはまだ作成されていません。</p>
+            <button type="button" className="m3-filled-button" onClick={onRegenerate}>
+              献立から作成する
+            </button>
+          </>
+        ) : (
+          <ExtraItemsSection onCountChange={setExtraCount} />
+        )}
       </div>
     )
   }
@@ -147,78 +201,83 @@ export default function ShoppingListScreen({ onBack, onRegenerate }) {
   const warnings = list.warnings ?? []
   const totalVisible = displayGroups.reduce((n, g) => n + g.items.length, 0)
 
-  return (
-    <div className="m3-screen">
-      {header}
-
-      <div className="m3-toolbar">
-        <div className="m3-segmented">
-          <button
-            type="button"
-            className={`m3-segment${sortMode === 'category' ? ' selected' : ''}`}
-            onClick={() => setSortMode('category')}
-          >
-            カテゴリ順
-          </button>
-          <button
-            type="button"
-            className={`m3-segment${sortMode === 'recipe' ? ' selected' : ''}`}
-            onClick={() => setSortMode('recipe')}
-          >
-            レシピ順
-          </button>
-        </div>
-        <label className="m3-switch-row">
-          <span className="m3-switch-label">計上不要も表示</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showSkipped}
-            className={`m3-switch${showSkipped ? ' on' : ''}`}
-            onClick={() => setShowSkipped((v) => !v)}
-          >
-            <span className="m3-switch-thumb" />
-          </button>
-        </label>
-      </div>
-
-      <div className="m3-content">
-        <p className="m3-supporting-text">
-          {list.start_date} 〜 {list.end_date}ぶん・{totalVisible}品
-        </p>
-
-        {warnings.length > 0 && (
-          <div className="m3-banner">
-            材料明細が未登録のレシピがあります: {warnings.join('、')}
-          </div>
-        )}
-
-        {displayGroups.length === 0 && <p className="m3-empty">表示できる材料がありません。</p>}
-
-        {displayGroups.map((g) => (
-          <div key={g.label} className="m3-group">
-            <p className="m3-group-header">{g.label}</p>
-            <div className="m3-card">
-              {g.items.map((it) => (
-                <IngredientRow
-                  key={`${g.label}-${it.ingredientId}`}
-                  item={it}
-                  onToggle={handleToggle}
-                  busy={busyId === it.ingredientId}
-                />
-              ))}
+  return renderShell(
+    <>
+      {tab === 'menu' && (
+        <>
+          <div className="m3-toolbar">
+            <div className="m3-segmented">
+              <button
+                type="button"
+                className={`m3-segment${sortMode === 'category' ? ' selected' : ''}`}
+                onClick={() => setSortMode('category')}
+              >
+                カテゴリ順
+              </button>
+              <button
+                type="button"
+                className={`m3-segment${sortMode === 'recipe' ? ' selected' : ''}`}
+                onClick={() => setSortMode('recipe')}
+              >
+                レシピ順
+              </button>
             </div>
+            <label className="m3-switch-row">
+              <span className="m3-switch-label">計上不要も表示</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showSkipped}
+                className={`m3-switch${showSkipped ? ' on' : ''}`}
+                onClick={() => setShowSkipped((v) => !v)}
+              >
+                <span className="m3-switch-thumb" />
+              </button>
+            </label>
           </div>
-        ))}
 
-        <button type="button" className="m3-tonal-button" onClick={onRegenerate}>
-          条件を変えて作り直す
-        </button>
+          <div className="m3-content">
+            <div className="m3-list-head-row">
+              <p className="m3-supporting-text">
+                {list.start_date} 〜 {list.end_date}ぶん・{totalVisible}品
+              </p>
+              <button type="button" className="m3-tonal-button m3-tonal-button-sm" onClick={onRegenerate}>
+                作り直す
+              </button>
+            </div>
 
-        <div className="m3-divider" />
+            {warnings.length > 0 && (
+              <div className="m3-banner">
+                材料明細が未登録のレシピがあります: {warnings.join('、')}
+              </div>
+            )}
 
-        <ExtraItemsSection />
-      </div>
-    </div>
+            {displayGroups.length === 0 && <p className="m3-empty">表示できる材料がありません。</p>}
+
+            {displayGroups.map((g) => (
+              <div key={g.label} className="m3-group">
+                <p className="m3-group-header">{g.label}</p>
+                <div className="m3-card">
+                  {g.items.map((it) => (
+                    <IngredientRow
+                      key={`${g.label}-${it.ingredientId}`}
+                      item={it}
+                      onToggle={handleToggle}
+                      busy={busyId === it.ingredientId}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab === 'extra' && (
+        <div className="m3-content">
+          <ExtraItemsSection onCountChange={setExtraCount} />
+        </div>
+      )}
+    </>
   )
 }

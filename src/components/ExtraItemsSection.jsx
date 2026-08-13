@@ -22,7 +22,7 @@ function getRecognition() {
 
 // 買い物リスト画面の「手動で追加」セクション。
 // 献立から作るリストとは独立していて、リストを作り直しても消えない。
-export default function ExtraItemsSection() {
+export default function ExtraItemsSection({ onCountChange }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
@@ -34,7 +34,10 @@ export default function ExtraItemsSection() {
   function load() {
     setLoading(true)
     fetchExtraItems()
-      .then(setItems)
+      .then((data) => {
+        setItems(data)
+        onCountChange?.(data.length)
+      })
       .catch(() => setError('読み込みに失敗しました'))
       .finally(() => setLoading(false))
   }
@@ -107,7 +110,11 @@ export default function ExtraItemsSection() {
   }
 
   async function handleDelete(item) {
-    setItems((prev) => prev.filter((it) => it.id !== item.id))
+    setItems((prev) => {
+      const next = prev.filter((it) => it.id !== item.id)
+      onCountChange?.(next.length)
+      return next
+    })
     try {
       await deleteExtraItem(item.id)
     } catch {
@@ -128,8 +135,6 @@ export default function ExtraItemsSection() {
 
   return (
     <div className="m3-group">
-      <p className="m3-group-header">手動で追加</p>
-
       <div className="m3-card m3-card-padded">
         <div className="m3-add-row">
           <input
