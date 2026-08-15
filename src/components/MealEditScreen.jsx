@@ -130,7 +130,6 @@ export default function MealEditScreen({ day, onBack }) {
       ) : (
         <SlotPanel
           key={activeSlot}
-          meals={mealsForActiveSlot}
           selectedMeal={selectedMeal}
           notionMeta={notionMeta}
           onMessage={setMessage}

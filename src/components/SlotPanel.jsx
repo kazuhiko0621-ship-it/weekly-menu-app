@@ -16,7 +16,6 @@ function modeFromSource(source) {
 // 実際の保存処理は行わず、確定した内容を onCommit に渡すだけ(呼び出し側が
 // 献立テーブル/食べたいものリストのどちらに書き込むかを決める)。
 export default function SlotPanel({
-  meals = [],
   selectedMeal,
   notionMeta,
   showEachTab = true,
@@ -178,10 +177,6 @@ export default function SlotPanel({
     }
   }
 
-  // 「各自」が既に登録されている場合、新規登録はできない(更新対象として選んでいる場合を除く)
-  const hasEachEntry = meals.some((m) => m.source === EACH_SOURCE && m.id !== selectedMeal?.id)
-  const blockedByEach = hasEachEntry && !selectedMeal
-
   const recipeResults = [
     ...notionResults.map((r) => ({
       key: `n-${r.id}`,
@@ -216,18 +211,12 @@ export default function SlotPanel({
   })
 
   const results = mode === 'dining' ? diningRows : recipeResults
-  const showFallback = searched && !loading && results.length === 0 && text.trim().length > 0
+  // 検索結果の有無にかかわらず、入力文字列をそのまま登録する選択肢を常に末尾に出す。
+  // ただし候補に全く同じ名前が既にある場合は重複するので出さない。
+  const trimmedText = text.trim()
+  const showFallback =
+    trimmedText.length > 0 && !loading && !results.some((r) => r.name === trimmedText)
   const fallbackSource = mode === 'dining' ? 'dining' : 'manual'
-
-  if (blockedByEach) {
-    return (
-      <div className="slot-panel">
-        <p className="results-hint">
-          「各自」が登録されているため、追加登録はできません。登録済み一覧から削除するか、更新アイコンから内容を変更してください。
-        </p>
-      </div>
-    )
-  }
 
   return (
     <div className="slot-panel">

@@ -28,7 +28,6 @@ export default function WishlistAddScreen({ onBack, onAdded }) {
       </div>
 
       <SlotPanel
-        meals={[]}
         selectedMeal={null}
         notionMeta={notionMeta}
         showEachTab={false}
