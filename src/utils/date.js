@@ -75,3 +75,20 @@ export function formatWeekRange(weekStart) {
 export function isToday(dateKey) {
   return dateKey === toDateKey(new Date())
 }
+
+// 買い物リストの期間プリセット用。
+// 「今日 〜 次の日曜日」。ただし今日が土日の場合は、その週末ではなく翌週の日曜日まで
+// (週末に翌週分をまとめ買いする使い方に合わせている)。
+export function getNextSundayFromToday(weeksAhead = 0) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dow = today.getDay() // 0=日, 6=土
+  const isWeekend = dow === 0 || dow === 6
+
+  // 次の日曜日までの日数(今日が日曜なら7日後)
+  let daysToSunday = (7 - dow) % 7
+  if (daysToSunday === 0) daysToSunday = 7
+  if (isWeekend) daysToSunday += 7
+
+  return addDays(today, daysToSunday + weeksAhead * 7)
+}

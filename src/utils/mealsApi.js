@@ -97,11 +97,13 @@ export async function deleteMeal(meal) {
   if (error) throw error
 }
 
-// 別の日付に移動する(ドラッグ&ドロップでの曜日移動用)。Googleカレンダーの予定日時も更新する
-export async function moveMealToDate(id, newDate) {
+// 別の日付/コマに移動する。Googleカレンダーの予定も更新する
+export async function moveMealTo(id, newDate, newSlot) {
+  const patch = { date: newDate, updated_at: new Date().toISOString() }
+  if (newSlot) patch.slot = newSlot
   const { data, error } = await supabase
     .from('meals')
-    .update({ date: newDate, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq('id', id)
     .select()
     .single()
@@ -109,6 +111,11 @@ export async function moveMealToDate(id, newDate) {
 
   await syncMealToCalendar(data)
   return data
+}
+
+// 別の日付に移動する(日付のみ変更する場合の従来互換)
+export async function moveMealToDate(id, newDate) {
+  return moveMealTo(id, newDate, null)
 }
 
 // 全履歴(過去〜現在に登録された全ての献立)を取得。「各自」は献立として扱わないため除外する

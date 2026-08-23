@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import CalendarView from './components/CalendarView.jsx'
-import PopularMeals from './components/PopularMeals.jsx'
-import WishlistScreen from './components/WishlistScreen.jsx'
+import IdeasScreen from './components/IdeasScreen.jsx'
 import WishlistAddScreen from './components/WishlistAddScreen.jsx'
-import ShoppingRangeScreen, { defaultRangeFromWeekStart } from './components/ShoppingRangeScreen.jsx'
+import ShoppingRangeScreen from './components/ShoppingRangeScreen.jsx'
 import ShoppingListScreen from './components/ShoppingListScreen.jsx'
 import NavBar from './components/NavBar.jsx'
 import LoginScreen from './components/LoginScreen.jsx'
@@ -12,12 +11,12 @@ import { supabase } from './supabaseClient.js'
 import { getWeekStart, addDays, formatTwoWeekRange } from './utils/date.js'
 
 export default function App() {
-  const [view, setView] = useState('week')
+  const [view, setView] = useState('week') // 'week' | 'shopping' | 'ideas'
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingDay, setEditingDay] = useState(null)
   const [addingWishlistItem, setAddingWishlistItem] = useState(false)
-  const [shoppingScreen, setShoppingScreen] = useState(null) // null | 'range' | 'list'
+  const [rangeOpen, setRangeOpen] = useState(false)
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
@@ -27,10 +26,9 @@ export default function App() {
   }, [])
 
   const bumpRefresh = () => setRefreshKey((k) => k + 1)
-  const currentWeekStart = getWeekStart(new Date())
 
   function goToCurrentWeek() {
-    setWeekStart(currentWeekStart)
+    setWeekStart(getWeekStart(new Date()))
     setView('week')
     setEditingDay(null)
   }
@@ -55,25 +53,12 @@ export default function App() {
       </div>
     )
   }
-  if (shoppingScreen === 'range') {
-    const { start, end } = defaultRangeFromWeekStart(weekStart)
+  if (rangeOpen) {
     return (
       <div className="app-shell">
         <ShoppingRangeScreen
-          defaultStart={start}
-          defaultEnd={end}
-          onBack={() => setShoppingScreen(null)}
-          onGenerated={() => setShoppingScreen('list')}
-        />
-      </div>
-    )
-  }
-  if (shoppingScreen === 'list') {
-    return (
-      <div className="app-shell">
-        <ShoppingListScreen
-          onBack={() => setShoppingScreen(null)}
-          onRegenerate={() => setShoppingScreen('range')}
+          onBack={() => setRangeOpen(false)}
+          onGenerated={() => { setRangeOpen(false); bumpRefresh() }}
         />
       </div>
     )
@@ -81,25 +66,38 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header app-header-slim">
-        <div className="app-header-date-nav">
-          <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, -7))} aria-label="前の週">
-            ‹
-          </button>
-          <span className="app-header-date">{formatTwoWeekRange(weekStart)}</span>
-          <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, 7))} aria-label="次の週">
-            ›
-          </button>
-        </div>
-        <div className="app-header-actions">
-          <button type="button" className="header-btn" onClick={goToCurrentWeek}>
-            今週に戻る
-          </button>
+      {view === 'week' && (
+        <header className="app-header app-header-slim">
+          <div className="app-header-date-nav">
+            <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, -7))} aria-label="前の週">
+              ‹
+            </button>
+            <span className="app-header-date">{formatTwoWeekRange(weekStart)}</span>
+            <button type="button" className="week-nav-btn" onClick={() => setWeekStart((d) => addDays(d, 7))} aria-label="次の週">
+              ›
+            </button>
+          </div>
+          <div className="app-header-actions">
+            <button type="button" className="header-btn" onClick={goToCurrentWeek}>
+              今週
+            </button>
+            <button type="button" className="signout-btn" onClick={() => supabase.auth.signOut()}>
+              ログアウト
+            </button>
+          </div>
+        </header>
+      )}
+
+      {view !== 'week' && (
+        <header className="app-header app-header-slim">
+          <span className="app-header-date">
+            {view === 'shopping' ? '買い物リスト' : '献立アイディア'}
+          </span>
           <button type="button" className="signout-btn" onClick={() => supabase.auth.signOut()}>
             ログアウト
           </button>
-        </div>
-      </header>
+        </header>
+      )}
 
       <main className="app-main">
         {view === 'week' && (
@@ -109,12 +107,17 @@ export default function App() {
             onNextWeek={() => setWeekStart((d) => addDays(d, 7))}
             onEditDay={setEditingDay}
             refreshKey={refreshKey}
-            onOpenShoppingList={() => setShoppingScreen('list')}
           />
         )}
-        {view === 'popular' && <PopularMeals onAdded={bumpRefresh} />}
-        {view === 'wishlist' && (
-          <WishlistScreen onAddNew={() => setAddingWishlistItem(true)} refreshKey={refreshKey} />
+        {view === 'shopping' && (
+          <ShoppingListScreen key={refreshKey} onRegenerate={() => setRangeOpen(true)} />
+        )}
+        {view === 'ideas' && (
+          <IdeasScreen
+            onAddWishlistItem={() => setAddingWishlistItem(true)}
+            onAdded={bumpRefresh}
+            refreshKey={refreshKey}
+          />
         )}
       </main>
 

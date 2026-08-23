@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import ExtraItemsSection from './ExtraItemsSection.jsx'
+import AddItemSheet from './AddItemSheet.jsx'
+import { DeleteIcon } from './ActionIcons.jsx'
 import { fetchShoppingList, toggleShoppingItem } from '../utils/shoppingListApi.js'
-import { fetchExtraItems } from '../utils/extraItemsApi.js'
+import {
+  fetchExtraItems,
+  toggleExtraItem,
+  deleteExtraItem,
+  CATEGORY_ORDER,
+} from '../utils/extraItemsApi.js'
 
-// 材料1件の行(タップで諸元となった明細を展開)
-function IngredientRow({ item, onToggle, busy }) {
+// 献立由来の材料1行(タップで諸元の明細を展開)
+function MenuRow({ item, onToggle, busy }) {
   const [open, setOpen] = useState(false)
   const qtyLabel =
     item.totalQty != null && item.totalQty > 0
@@ -24,14 +30,15 @@ function IngredientRow({ item, onToggle, busy }) {
           onChange={() => onToggle(item, !item.checked)}
         />
         <button type="button" className="m3-list-body" onClick={() => setOpen((v) => !v)}>
-          <span className="m3-list-title">
-            {item.name}
-            {item.skip && <span className="m3-chip-mini">計上不要</span>}
+          <span className="m3-row-main">
+            <span className="m3-list-title">{item.name}</span>
+            <span className="m3-row-chips">
+              <span className="m3-chip-cat">{item.category}</span>
+              <span className="m3-chip-src menu">献立</span>
+              {item.skip && <span className="m3-chip-mini">計上不要</span>}
+            </span>
           </span>
-          <span className="m3-list-meta">
-            {qtyLabel}
-            {item.hasUnknownQty && item.totalQty > 0 ? ' +適量' : ''}
-          </span>
+          <span className="m3-list-meta">{qtyLabel}</span>
           <span className={`m3-expand-icon${open ? ' open' : ''}`}>▾</span>
         </button>
       </div>
@@ -61,23 +68,56 @@ function IngredientRow({ item, onToggle, busy }) {
   )
 }
 
-export default function ShoppingListScreen({ onBack, onRegenerate }) {
+// 手動登録1行(右端にゴミ箱)
+function ExtraRow({ item, onToggle, onDelete }) {
+  return (
+    <div className={`m3-list-item-wrap${item.checked ? ' is-checked' : ''}`}>
+      <div className="m3-list-item">
+        <input
+          type="checkbox"
+          className="m3-checkbox"
+          checked={!!item.checked}
+          onChange={() => onToggle(item)}
+        />
+        <div className="m3-list-body m3-list-body-static">
+          <span className="m3-row-main">
+            <span className="m3-list-title">{item.name}</span>
+            <span className="m3-row-chips">
+              <span className="m3-chip-cat">{item.category || 'その他'}</span>
+              <span className="m3-chip-src manual">手動</span>
+            </span>
+          </span>
+        </div>
+        <button
+          type="button"
+          className="icon-btn icon-btn-danger"
+          onClick={() => onDelete(item)}
+          aria-label="削除"
+        >
+          <DeleteIcon />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function ShoppingListScreen({ onRegenerate }) {
   const [list, setList] = useState(undefined)
+  const [extras, setExtras] = useState([])
   const [busyId, setBusyId] = useState(null)
   const [showSkipped, setShowSkipped] = useState(false)
+  const [hideChecked, setHideChecked] = useState(false)
   const [sortMode, setSortMode] = useState('category') // 'category' | 'recipe'
-  const [tab, setTab] = useState('menu') // 'menu' | 'extra'
-  const [extraCount, setExtraCount] = useState(0)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
-  useEffect(() => {
+  function loadAll() {
     fetchShoppingList().then(setList)
-    // タブのバッジ用に、手動登録の件数も最初に取得しておく
-    fetchExtraItems()
-      .then((data) => setExtraCount(data.length))
-      .catch(() => setExtraCount(0))
-  }, [])
+    fetchExtraItems().then(setExtras).catch(() => setExtras([]))
+  }
 
-  async function handleToggle(item, checked) {
+  useEffect(loadAll, [])
+
+  async function handleToggleMenu(item, checked) {
     setBusyId(item.ingredientId)
     setList((prev) => ({
       ...prev,
@@ -95,189 +135,158 @@ export default function ShoppingListScreen({ onBack, onRegenerate }) {
     }
   }
 
-  // 表示用のグループを組み立てる(カテゴリ順 or レシピ順)
-  const displayGroups = useMemo(() => {
-    if (!list?.items?.groups) return []
-    const allItems = list.items.groups.flatMap((g) => g.items.map((it) => ({ ...it, category: g.category })))
-    const visible = allItems.filter((it) => showSkipped || !it.skip)
-
-    if (sortMode === 'category') {
-      const out = []
-      for (const g of list.items.groups) {
-        const items = g.items.filter((it) => showSkipped || !it.skip)
-        if (items.length > 0) out.push({ label: g.category, items })
-      }
-      return out
+  async function handleToggleExtra(item) {
+    const next = !item.checked
+    setExtras((prev) => prev.map((it) => (it.id === item.id ? { ...it, checked: next } : it)))
+    try {
+      await toggleExtraItem(item.id, next)
+    } catch {
+      loadAll()
     }
+  }
 
-    // レシピ順: 材料が複数レシピに登場する場合は、それぞれのレシピ配下に表示する
-    const byRecipe = new Map()
-    for (const it of visible) {
-      for (const d of it.details) {
-        const key = d.recipeTitle
-        const entry = byRecipe.get(key) ?? { label: key, url: d.recipeUrl, items: [] }
-        if (!entry.items.some((x) => x.ingredientId === it.ingredientId)) entry.items.push(it)
-        byRecipe.set(key, entry)
-      }
+  async function handleDeleteExtra(item) {
+    setExtras((prev) => prev.filter((it) => it.id !== item.id))
+    try {
+      await deleteExtraItem(item.id)
+    } catch {
+      loadAll()
     }
-    return Array.from(byRecipe.values())
-  }, [list, showSkipped, sortMode])
+  }
 
-  // タブのバッジ用: 献立から集計された材料の件数(重複を除いた実数)
-  const menuCount = useMemo(() => {
-    if (!list?.items?.groups) return 0
-    const ids = new Set()
-    for (const g of list.items.groups) {
-      for (const it of g.items) {
-        if (!showSkipped && it.skip) continue
-        ids.add(it.ingredientId)
-      }
-    }
-    return ids.size
-  }, [list, showSkipped])
-
-  const extraTabLabel = (
-    <>
-      手動登録
-      <span className={`m3-tab-badge${extraCount === 0 ? ' zero' : ''}`}>{extraCount}</span>
-    </>
-  )
-
-  function renderShell(children, { withTabs = true } = {}) {
-    return (
-      <div className="m3-screen">
-        <div className="m3-top-app-bar">
-          <button type="button" className="m3-icon-button" onClick={onBack} aria-label="戻る">←</button>
-          <span className="m3-top-app-bar-title">買い物リスト</span>
-        </div>
-
-        {withTabs && (
-          <div className="m3-tabs">
-            <button
-              type="button"
-              className={`m3-tab${tab === 'menu' ? ' selected' : ''}`}
-              onClick={() => setTab('menu')}
-            >
-              献立から
-              <span className={`m3-tab-badge${menuCount === 0 ? ' zero' : ''}`}>{menuCount}</span>
-            </button>
-            <button
-              type="button"
-              className={`m3-tab${tab === 'extra' ? ' selected' : ''}`}
-              onClick={() => setTab('extra')}
-            >
-              {extraTabLabel}
-            </button>
-          </div>
-        )}
-
-        {children}
-      </div>
+  // 献立由来と手動登録を1つのリストに統合する。
+  // 見出しは出さずカテゴリ順に並べるだけにして、1画面あたりの表示量を増やしている。
+  const rows = useMemo(() => {
+    const menuItems = (list?.items?.groups ?? []).flatMap((g) =>
+      g.items.map((it) => ({ kind: 'menu', category: g.category, ...it }))
     )
-  }
+    const extraItems = extras.map((it) => ({
+      kind: 'extra',
+      category: it.category || 'その他',
+      ...it,
+    }))
 
-  if (list === undefined) {
-    return renderShell(<p className="m3-empty">読み込み中…</p>, { withTabs: false })
-  }
+    let all = [...menuItems, ...extraItems]
+    if (!showSkipped) all = all.filter((it) => !(it.kind === 'menu' && it.skip))
+    if (hideChecked) all = all.filter((it) => !it.checked)
 
-  // 献立リストが未作成でも「手動登録」タブは使えるようにする
-  if (!list) {
-    return renderShell(
+    if (sortMode === 'recipe') {
+      // レシピ順: 献立由来はレシピ名、手動登録は末尾にまとめる
+      const keyOf = (it) => (it.kind === 'menu' ? it.details?.[0]?.recipeTitle ?? '' : '\uffff手動登録')
+      return all.sort((a, b) => keyOf(a).localeCompare(keyOf(b), 'ja') || a.name.localeCompare(b.name, 'ja'))
+    }
+
+    const catIndex = (c) => {
+      const i = CATEGORY_ORDER.indexOf(c)
+      return i === -1 ? 999 : i
+    }
+    return all.sort(
+      (a, b) => catIndex(a.category) - catIndex(b.category) || a.name.localeCompare(b.name, 'ja')
+    )
+  }, [list, extras, showSkipped, hideChecked, sortMode])
+
+  const remaining = rows.filter((r) => !r.checked).length
+
+  return (
+    <div className="shopping-screen">
+      <div className="m3-toolbar">
+        <div className="m3-segmented">
+          <button
+            type="button"
+            className={`m3-segment${sortMode === 'category' ? ' selected' : ''}`}
+            onClick={() => setSortMode('category')}
+          >
+            カテゴリ順
+          </button>
+          <button
+            type="button"
+            className={`m3-segment${sortMode === 'recipe' ? ' selected' : ''}`}
+            onClick={() => setSortMode('recipe')}
+          >
+            レシピ順
+          </button>
+        </div>
+        <div className="m3-toolbar-switches">
+          <label className="m3-switch-row">
+            <span className="m3-switch-label">未購入のみ</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={hideChecked}
+              className={`m3-switch${hideChecked ? ' on' : ''}`}
+              onClick={() => setHideChecked((v) => !v)}
+            >
+              <span className="m3-switch-thumb" />
+            </button>
+          </label>
+          <label className="m3-switch-row">
+            <span className="m3-switch-label">計上不要も</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showSkipped}
+              className={`m3-switch${showSkipped ? ' on' : ''}`}
+              onClick={() => setShowSkipped((v) => !v)}
+            >
+              <span className="m3-switch-thumb" />
+            </button>
+          </label>
+        </div>
+      </div>
+
       <div className="m3-content">
-        {tab === 'menu' ? (
-          <>
-            <p className="m3-supporting-text">献立からの買い物リストはまだ作成されていません。</p>
-            <button type="button" className="m3-filled-button" onClick={onRegenerate}>
-              献立から作成する
-            </button>
-          </>
+        <div className="m3-list-head-row">
+          <p className="m3-supporting-text">
+            {list ? `${list.start_date} 〜 ${list.end_date}ぶん・` : ''}
+            残り{remaining}品
+          </p>
+          <button type="button" className="m3-tonal-button m3-tonal-button-sm" onClick={onRegenerate}>
+            {list ? '作り直す' : '献立から作成'}
+          </button>
+        </div>
+
+        {(list?.warnings ?? []).length > 0 && (
+          <div className="m3-banner">
+            材料明細が未登録のレシピがあります: {list.warnings.join('、')}
+          </div>
+        )}
+
+        {list === undefined ? (
+          <p className="m3-empty">読み込み中…</p>
+        ) : rows.length === 0 ? (
+          <p className="m3-empty">
+            表示できる品がありません。右下のボタンから追加するか、献立から作成してください。
+          </p>
         ) : (
-          <ExtraItemsSection onCountChange={setExtraCount} />
+          <div className="m3-card">
+            {rows.map((r) =>
+              r.kind === 'menu' ? (
+                <MenuRow
+                  key={`m-${r.ingredientId}`}
+                  item={r}
+                  onToggle={handleToggleMenu}
+                  busy={busyId === r.ingredientId}
+                />
+              ) : (
+                <ExtraRow
+                  key={`e-${r.id}`}
+                  item={r}
+                  onToggle={handleToggleExtra}
+                  onDelete={handleDeleteExtra}
+                />
+              )
+            )}
+          </div>
         )}
       </div>
-    )
-  }
 
-  const warnings = list.warnings ?? []
-  const totalVisible = displayGroups.reduce((n, g) => n + g.items.length, 0)
+      <div className="m3-fab-wrap">
+        <button type="button" className="m3-fab" onClick={() => setSheetOpen(true)} aria-label="品を追加">
+          ＋
+        </button>
+      </div>
 
-  return renderShell(
-    <>
-      {tab === 'menu' && (
-        <>
-          <div className="m3-toolbar">
-            <div className="m3-segmented">
-              <button
-                type="button"
-                className={`m3-segment${sortMode === 'category' ? ' selected' : ''}`}
-                onClick={() => setSortMode('category')}
-              >
-                カテゴリ順
-              </button>
-              <button
-                type="button"
-                className={`m3-segment${sortMode === 'recipe' ? ' selected' : ''}`}
-                onClick={() => setSortMode('recipe')}
-              >
-                レシピ順
-              </button>
-            </div>
-            <label className="m3-switch-row">
-              <span className="m3-switch-label">計上不要も表示</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showSkipped}
-                className={`m3-switch${showSkipped ? ' on' : ''}`}
-                onClick={() => setShowSkipped((v) => !v)}
-              >
-                <span className="m3-switch-thumb" />
-              </button>
-            </label>
-          </div>
-
-          <div className="m3-content">
-            <div className="m3-list-head-row">
-              <p className="m3-supporting-text">
-                {list.start_date} 〜 {list.end_date}ぶん・{totalVisible}品
-              </p>
-              <button type="button" className="m3-tonal-button m3-tonal-button-sm" onClick={onRegenerate}>
-                作り直す
-              </button>
-            </div>
-
-            {warnings.length > 0 && (
-              <div className="m3-banner">
-                材料明細が未登録のレシピがあります: {warnings.join('、')}
-              </div>
-            )}
-
-            {displayGroups.length === 0 && <p className="m3-empty">表示できる材料がありません。</p>}
-
-            {displayGroups.map((g) => (
-              <div key={g.label} className="m3-group">
-                <p className="m3-group-header">{g.label}</p>
-                <div className="m3-card">
-                  {g.items.map((it) => (
-                    <IngredientRow
-                      key={`${g.label}-${it.ingredientId}`}
-                      item={it}
-                      onToggle={handleToggle}
-                      busy={busyId === it.ingredientId}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {tab === 'extra' && (
-        <div className="m3-content">
-          <ExtraItemsSection onCountChange={setExtraCount} />
-        </div>
-      )}
-    </>
+      {sheetOpen && <AddItemSheet onClose={() => setSheetOpen(false)} onAdded={loadAll} />}
+    </div>
   )
 }

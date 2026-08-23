@@ -1,12 +1,34 @@
 import { useState } from 'react'
-import { toDateKey, addDays } from '../utils/date.js'
+import { toDateKey, getNextSundayFromToday } from '../utils/date.js'
 import { generateShoppingList, saveShoppingList } from '../utils/shoppingListApi.js'
 
-export default function ShoppingRangeScreen({ defaultStart, defaultEnd, onBack, onGenerated }) {
-  const [startDate, setStartDate] = useState(defaultStart)
-  const [endDate, setEndDate] = useState(defaultEnd)
+// 期間プリセット。今日を起点に「次の日曜日まで」「さらに次の日曜日まで」を選べる。
+// 今日が土日の場合は、その週末ではなく翌週の日曜日が「次の日曜日」になる。
+const PRESETS = [
+  { key: 'thisWeek', label: '次の日曜日まで', weeksAhead: 0 },
+  { key: 'nextWeek', label: 'さらに次の日曜日まで', weeksAhead: 1 },
+]
+
+export default function ShoppingRangeScreen({ onBack, onGenerated }) {
+  const todayKey = toDateKey(new Date())
+  const [preset, setPreset] = useState('thisWeek')
+  const [startDate, setStartDate] = useState(todayKey)
+  const [endDate, setEndDate] = useState(() => toDateKey(getNextSundayFromToday(0)))
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState(null)
+
+  function applyPreset(p) {
+    setPreset(p.key)
+    setStartDate(todayKey)
+    setEndDate(toDateKey(getNextSundayFromToday(p.weeksAhead)))
+  }
+
+  function handleManualDate(setter) {
+    return (e) => {
+      setter(e.target.value)
+      setPreset('custom')
+    }
+  }
 
   async function handleGenerate() {
     if (generating) return
@@ -32,25 +54,38 @@ export default function ShoppingRangeScreen({ defaultStart, defaultEnd, onBack, 
     <div className="m3-screen">
       <div className="m3-top-app-bar">
         <button type="button" className="m3-icon-button" onClick={onBack} aria-label="戻る">←</button>
-        <span className="m3-top-app-bar-title">買い物リストを作る</span>
+        <span className="m3-top-app-bar-title">献立から買い物リストを作る</span>
       </div>
 
       <div className="m3-content">
-        <p className="m3-group-header">対象期間</p>
+        <p className="m3-group-header">期間</p>
+        <div className="m3-chip-wrap">
+          {PRESETS.map((p) => (
+            <button
+              type="button"
+              key={p.key}
+              className={`chip${preset === p.key ? ' active' : ''}`}
+              onClick={() => applyPreset(p)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
         <div className="m3-card m3-card-padded">
           <div className="m3-range-inputs">
             <input
               type="date"
               className="m3-text-field"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={handleManualDate(setStartDate)}
             />
             <span className="m3-range-tilde">〜</span>
             <input
               type="date"
               className="m3-text-field"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={handleManualDate(setEndDate)}
             />
           </div>
         </div>
@@ -58,6 +93,7 @@ export default function ShoppingRangeScreen({ defaultStart, defaultEnd, onBack, 
         <p className="m3-supporting-text">
           この期間の献立のうち、Notionのレシピから登録したものを対象に、
           レシピ材料明細から材料を集計します。外食・各自・手入力の献立は対象外です。
+          手動で追加した品は作り直しても消えません。
         </p>
 
         {error && <div className="m3-banner m3-banner-error">{error}</div>}
@@ -68,11 +104,4 @@ export default function ShoppingRangeScreen({ defaultStart, defaultEnd, onBack, 
       </div>
     </div>
   )
-}
-
-export function defaultRangeFromWeekStart(weekStart) {
-  return {
-    start: toDateKey(weekStart),
-    end: toDateKey(addDays(weekStart, 13)),
-  }
 }

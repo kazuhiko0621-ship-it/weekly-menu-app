@@ -50,6 +50,28 @@ export async function deleteCheckedExtraItems() {
   if (error) throw error
 }
 
+// よく買うもの: 過去の手動登録の履歴から、登録回数の多い順に上位を返す。
+// マスタを別途メンテしなくても、使うほど自分の定番に馴染む。
+export async function fetchFrequentItems(limit = 12) {
+  const { data, error } = await supabase
+    .from('shopping_extra_items')
+    .select('name')
+    .order('created_at', { ascending: false })
+    .limit(500)
+  if (error) throw error
+
+  const counts = new Map()
+  for (const row of data ?? []) {
+    const name = (row.name ?? '').trim()
+    if (!name) continue
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name, count]) => ({ name, count }))
+}
+
 // カテゴリごとにグループ化(マスタに無いものは「その他」へ)
 export function groupExtraItems(items) {
   const byCategory = new Map()

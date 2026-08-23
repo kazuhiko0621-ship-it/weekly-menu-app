@@ -984,3 +984,123 @@ button { font-family: var(--font-sans); }
   font-size: 13px;
   flex-shrink: 0;
 }
+
+/* ── 統合買い物リスト ── */
+.shopping-screen { display: flex; flex-direction: column; }
+
+.m3-toolbar-switches { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+.m3-row-main { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.m3-row-chips { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+.m3-chip-cat {
+  font-size: 10px;
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.m3-chip-src {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+.m3-chip-src.menu { background: var(--primary-container); color: var(--on-primary-container); }
+.m3-chip-src.manual { background: #e6f4ea; color: #137333; }
+
+.m3-list-body-static { cursor: default; }
+
+/* ── FAB ── */
+.m3-fab-wrap {
+  position: fixed;
+  right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+.m3-fab {
+  width: 56px; height: 56px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--elev-3);
+}
+
+/* ── ボトムシート ── */
+.m3-sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(32,33,36,.32);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 60;
+}
+.m3-sheet {
+  width: 100%;
+  max-width: 520px;
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 8px 20px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: var(--elev-3);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.m3-sheet-handle {
+  width: 32px; height: 4px;
+  background: var(--outline);
+  border-radius: var(--radius-full);
+  margin: 0 auto 14px;
+}
+.m3-sheet-title { font-size: 17px; font-weight: 500; margin: 0 0 14px; }
+.m3-sheet-subtitle { font-size: 12px; color: var(--on-surface-variant); margin: 16px 0 8px; }
+.m3-chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.m3-sheet-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 20px; }
+
+/* ── 移動モード: コマ選択 ── */
+.move-slot-panel { padding: 14px 16px 18px; background: var(--surface); }
+.move-slot-date {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.move-slot-badge {
+  font-size: 10px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+.move-slot-buttons { display: flex; flex-direction: column; gap: 8px; }
+.move-slot-btn {
+  border: 1px solid var(--tertiary);
+  background: #e6f4ea;
+  color: #137333;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.move-slot-btn.current { background: var(--surface-container); border-color: var(--outline); color: var(--on-surface-variant); }
+.move-slot-note { font-size: 11px; }
+.move-slot-hint { font-size: 12px; color: var(--on-surface-variant); margin: 12px 0 0; text-align: center; }
+
+.cal-cell.move-candidate { background: var(--surface-container); }
+
+/* ── ボトムナビ(アイコン+ラベル) ── */
+.nav-icon { display: block; font-size: 18px; line-height: 1.2; }
+.nav-label { display: block; font-size: 10px; margin-top: 2px; }
+
+/* ── 献立アイディア ── */
+.ideas-screen { display: flex; flex-direction: column; }
+.ideas-screen .m3-tabs { top: 0; }

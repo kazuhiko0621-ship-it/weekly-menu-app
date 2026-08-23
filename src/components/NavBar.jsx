@@ -1,27 +1,23 @@
 export default function NavBar({ view, onChange }) {
+  const items = [
+    { key: 'week', label: '献立', icon: '📅' },
+    { key: 'shopping', label: '買い物リスト', icon: '🛒' },
+    { key: 'ideas', label: '献立アイディア', icon: '💡' },
+  ]
+
   return (
     <nav className="nav-bar">
-      <button
-        type="button"
-        className={view === 'week' ? 'nav-btn active' : 'nav-btn'}
-        onClick={() => onChange('week')}
-      >
-        今週の献立
-      </button>
-      <button
-        type="button"
-        className={view === 'popular' ? 'nav-btn active' : 'nav-btn'}
-        onClick={() => onChange('popular')}
-      >
-        人気献立
-      </button>
-      <button
-        type="button"
-        className={view === 'wishlist' ? 'nav-btn active' : 'nav-btn'}
-        onClick={() => onChange('wishlist')}
-      >
-        食べたいリスト
-      </button>
+      {items.map((it) => (
+        <button
+          type="button"
+          key={it.key}
+          className={view === it.key ? 'nav-btn active' : 'nav-btn'}
+          onClick={() => onChange(it.key)}
+        >
+          <span className="nav-icon">{it.icon}</span>
+          <span className="nav-label">{it.label}</span>
+        </button>
+      ))}
     </nav>
   )
 }
