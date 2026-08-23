@@ -96,13 +96,25 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
   }
 
   function handleGripPointerDown(e, meal) {
+    // iOSの長押しメニュー(コピー/選択)やスクロール開始を抑止する
     e.preventDefault()
+    e.stopPropagation()
     clearTimeout(pressTimerRef.current)
     pressTimerRef.current = setTimeout(() => startMove(meal), 600)
   }
 
   function handleGripPointerUp() {
     clearTimeout(pressTimerRef.current)
+  }
+
+  // 長押し待機中に指が動いた場合はスクロール操作とみなして中断する
+  function handleGripPointerMove() {
+    clearTimeout(pressTimerRef.current)
+  }
+
+  // 長押しでコンテキストメニューが出るのを止める
+  function handleGripContextMenu(e) {
+    e.preventDefault()
   }
 
   const moveTargetDay = days.find((d) => d.dateKey === moveTargetDate)
@@ -286,6 +298,8 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
                         onPointerDown={(e) => handleGripPointerDown(e, m)}
                         onPointerUp={handleGripPointerUp}
                         onPointerCancel={handleGripPointerUp}
+                        onPointerMove={handleGripPointerMove}
+                        onContextMenu={handleGripContextMenu}
                       >
                         <GripIcon />
                       </button>

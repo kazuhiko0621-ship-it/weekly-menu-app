@@ -17,6 +17,7 @@ export default function App() {
   const [editingDay, setEditingDay] = useState(null)
   const [addingWishlistItem, setAddingWishlistItem] = useState(false)
   const [rangeOpen, setRangeOpen] = useState(false)
+  const [shoppingSummary, setShoppingSummary] = useState(null)
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
@@ -90,9 +91,17 @@ export default function App() {
 
       {view !== 'week' && (
         <header className="app-header app-header-slim">
-          <span className="app-header-date">
-            {view === 'shopping' ? '買い物リスト' : '献立アイディア'}
-          </span>
+          <div className="app-header-titlebox">
+            <span className="app-header-date">
+              {view === 'shopping' ? '買い物リスト' : '献立アイディア'}
+            </span>
+            {view === 'shopping' && shoppingSummary && (
+              <span className="app-header-sub">
+                {shoppingSummary.range ? `${shoppingSummary.range}・` : ''}
+                残り{shoppingSummary.remaining}品
+              </span>
+            )}
+          </div>
           <button type="button" className="signout-btn" onClick={() => supabase.auth.signOut()}>
             ログアウト
           </button>
@@ -110,7 +119,11 @@ export default function App() {
           />
         )}
         {view === 'shopping' && (
-          <ShoppingListScreen key={refreshKey} onRegenerate={() => setRangeOpen(true)} />
+          <ShoppingListScreen
+            key={refreshKey}
+            onRegenerate={() => setRangeOpen(true)}
+            onSummaryChange={setShoppingSummary}
+          />
         )}
         {view === 'ideas' && (
           <IdeasScreen

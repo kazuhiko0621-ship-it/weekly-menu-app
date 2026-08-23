@@ -50,6 +50,17 @@ export async function deleteCheckedExtraItems() {
   if (error) throw error
 }
 
+// 既存の買い物メモを材料マスタと再照合してジャンルを更新する。
+// マスタを後から整備した場合や、表記ゆれの判定を改善した場合に使う。
+export async function recategorizeExtraItems() {
+  const { data, error } = await supabase.functions.invoke('quick-add', {
+    body: { mode: 'recategorize' },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
 // ── よく買うもの(定番リスト)──
 // 履歴からの自動集計ではなく、ユーザーが自分で登録・削除して育てるマスタ。
 // 買い物リストを片付けても消えず、余計なレコードも溜まらない。

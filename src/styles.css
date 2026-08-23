@@ -48,6 +48,30 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* iOSでボタンやカレンダーのセルを長押ししたときに、
+   テキスト選択やコピー/共有のメニューが出るのを防ぐ。
+   入力欄と、本文として読ませたい箇所は下で選択可能に戻している。 */
+button,
+.cal-cell,
+.m3-list-item,
+.m3-tab,
+.nav-btn,
+.chip,
+.m3-staple-chip {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+.m3-detail-panel,
+.m3-detail-raw {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 button { font-family: var(--font-sans); }
 
 .app-shell {
@@ -550,7 +574,13 @@ button { font-family: var(--font-sans); }
   cursor: grab;
   touch-action: none;
   border-radius: 50%;
+  /* iOSで長押ししたときに「コピー/選択」メニューや
+     リンクのプレビューが出るのを抑止する */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
+.grip-handle * { pointer-events: none; }
 .grip-active { color: var(--primary) !important; background: var(--primary-container); }
 
 /* ── 編集画面 ── */
@@ -1209,3 +1239,13 @@ button { font-family: var(--font-sans); }
   padding: 7px 10px 7px 2px;
   cursor: pointer;
 }
+
+.m3-head-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.m3-text-button-sm { padding: 6px 8px; font-size: 12px; white-space: nowrap; }
+
+/* ── ヘッダー内の補足情報 ── */
+.app-header-titlebox { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.app-header-sub { font-size: 11px; color: var(--on-surface-variant); white-space: nowrap; }
+
+.m3-text-button-danger { color: var(--error); }
+.m3-list-head-row { flex-wrap: wrap; gap: 6px; }

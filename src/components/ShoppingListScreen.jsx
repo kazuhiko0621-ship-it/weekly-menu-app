@@ -6,6 +6,8 @@ import {
   fetchExtraItems,
   toggleExtraItem,
   deleteExtraItem,
+  deleteCheckedExtraItems,
+  recategorizeExtraItems,
   CATEGORY_ORDER,
 } from '../utils/extraItemsApi.js'
 
@@ -108,7 +110,7 @@ function ExtraRow({ item, onToggle, onDelete }) {
   )
 }
 
-export default function ShoppingListScreen({ onRegenerate }) {
+export default function ShoppingListScreen({ onRegenerate, onSummaryChange }) {
   const [list, setList] = useState(undefined)
   const [extras, setExtras] = useState([])
   const [busyId, setBusyId] = useState(null)
@@ -116,6 +118,8 @@ export default function ShoppingListScreen({ onRegenerate }) {
   const [hideChecked, setHideChecked] = useState(false)
   const [sortMode, setSortMode] = useState('category') // 'category' | 'recipe'
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [recatBusy, setRecatBusy] = useState(false)
+  const [notice, setNotice] = useState(null)
 
   function loadAll() {
     fetchShoppingList().then(setList)
@@ -150,6 +154,34 @@ export default function ShoppingListScreen({ onRegenerate }) {
     } catch {
       loadAll()
     }
+  }
+
+  // 手動追加分のジャンルを、材料マスタと再照合して更新する
+  async function handleRecategorize() {
+    if (recatBusy) return
+    setRecatBusy(true)
+    setNotice(null)
+    try {
+      const res = await recategorizeExtraItems()
+      setNotice(res?.message ?? 'ジャンルを更新しました')
+      loadAll()
+    } catch (e) {
+      console.error(e)
+      setNotice('ジャンルの再判定に失敗しました')
+    } finally {
+      setRecatBusy(false)
+    }
+  }
+
+  // 購入済み(チェック済み)の手動登録分をまとめて削除する。
+  // 献立由来の材料は献立から再生成できるので対象外。
+  async function handleDeleteCheckedExtras() {
+    const count = extras.filter((it) => it.checked).length
+    if (count === 0) return
+    if (!window.confirm(`購入済みの手動登録${count}件を削除しますか？`)) return
+    await deleteCheckedExtraItems()
+    setNotice(`${count}件を削除しました`)
+    loadAll()
   }
 
   async function handleDeleteExtra(item) {
@@ -226,6 +258,16 @@ export default function ShoppingListScreen({ onRegenerate }) {
     return seen.size
   }, [sections])
 
+  const checkedExtraCount = extras.filter((it) => it.checked).length
+
+  // 期間と残り件数はヘッダーに表示するので、親へ伝える
+  useEffect(() => {
+    onSummaryChange?.({
+      range: list ? `${list.start_date} 〜 ${list.end_date}` : null,
+      remaining,
+    })
+  }, [list, remaining, onSummaryChange])
+
   return (
     <div className="shopping-screen">
       <div className="m3-toolbar">
@@ -275,14 +317,31 @@ export default function ShoppingListScreen({ onRegenerate }) {
 
       <div className="m3-content">
         <div className="m3-list-head-row">
-          <p className="m3-supporting-text">
-            {list ? `${list.start_date} 〜 ${list.end_date}ぶん・` : ''}
-            残り{remaining}品
-          </p>
+          <div className="m3-head-actions">
+            <button
+              type="button"
+              className="m3-text-button m3-text-button-sm"
+              disabled={recatBusy}
+              onClick={handleRecategorize}
+            >
+              {recatBusy ? '判定中…' : 'ジャンル再判定'}
+            </button>
+            {checkedExtraCount > 0 && (
+              <button
+                type="button"
+                className="m3-text-button m3-text-button-sm m3-text-button-danger"
+                onClick={handleDeleteCheckedExtras}
+              >
+                購入済みを削除({checkedExtraCount})
+              </button>
+            )}
+          </div>
           <button type="button" className="m3-tonal-button m3-tonal-button-sm" onClick={onRegenerate}>
             {list ? '作り直す' : '献立から作成'}
           </button>
         </div>
+
+        {notice && <div className="m3-banner">{notice}</div>}
 
         {(list?.warnings ?? []).length > 0 && (
           <div className="m3-banner">

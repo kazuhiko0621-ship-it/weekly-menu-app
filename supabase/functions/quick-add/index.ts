@@ -80,13 +80,49 @@ function splitNames(text: string): string[] {
     .filter((s) => s.length > 0)
 }
 
-// 材料マスタとの照合。完全一致 → 部分一致 の順で探す
+// 旧字体・異体字の揺れを吸収するための変換表(食材まわりで実際に起きやすいものだけ)
+const CHAR_VARIANTS: Record<string, string> = {
+  '醬': '醤', '麵': '麺', '鷄': '鶏', '蔥': '葱', '醱': '醗',
+  '麥': '麦', '壽': '寿', '蠣': '蛎', '國': '国', '菸': '煙',
+  '搾': '絞', '挽': '碾',
+}
+
+// 照合用に品名を正規化する。
+//  ・NFKC で全角/半角・記号の揺れを吸収
+//  ・空白を除去
+//  ・カタカナをひらがなに寄せる(トウバンジャン ⇄ とうばんじゃん)
+//  ・旧字体を新字体に寄せる(豆板醬 ⇄ 豆板醤)
+function normalizeName(s: string): string {
+  let t = (s ?? '').normalize('NFKC').trim().toLowerCase()
+  t = t.replace(/[\s\u3000]/g, '')
+  t = t.replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+  t = t.split('').map((c) => CHAR_VARIANTS[c] ?? c).join('')
+  return t
+}
+
+// 材料マスタとの照合。正規化した名前で「完全一致 → 部分一致(最長優先)」の順に探す。
+// 部分一致は誤爆しやすいので2文字以上に限定している。
 function resolveCategory(name: string, catalog: Map<string, string>): string | null {
-  if (catalog.has(name)) return catalog.get(name)!
+  const target = normalizeName(name)
+  if (!target) return null
+
+  let bestCategory: string | null = null
+  let bestLen = 0
+
   for (const [master, category] of catalog.entries()) {
-    if (name.includes(master) || master.includes(name)) return category
+    const m = normalizeName(master)
+    if (!m) continue
+    if (m === target) return category // 完全一致は即採用
+    if (m.length < 2 || target.length < 2) continue
+    if (target.includes(m) || m.includes(target)) {
+      // より長く一致するマスタを優先する(「油」より「オリーブ油」)
+      if (m.length > bestLen) {
+        bestLen = m.length
+        bestCategory = category
+      }
+    }
   }
-  return null
+  return bestCategory
 }
 
 serve(async (req) => {
@@ -121,6 +157,33 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}))
+
+    // 既存の買い物メモを材料マスタと再照合してカテゴリを更新するモード。
+    // マスタを後から整備した場合や、表記ゆれの判定を改善した場合に使う。
+    if (body.mode === 'recategorize') {
+      const catalog = await fetchIngredientCategories()
+      if (catalog.size === 0) {
+        return json({ error: '材料マスタを取得できませんでした' }, 500)
+      }
+      const { data: existing, error: fetchErr } = await supabase
+        .from('shopping_extra_items')
+        .select('id, name, category')
+      if (fetchErr) return json({ error: fetchErr.message }, 500)
+
+      let updated = 0
+      for (const row of existing ?? []) {
+        const next = resolveCategory(row.name, catalog)
+        if (next && next !== row.category) {
+          const { error } = await supabase
+            .from('shopping_extra_items')
+            .update({ category: next })
+            .eq('id', row.id)
+          if (!error) updated += 1
+        }
+      }
+      return json({ ok: true, updated, message: `${updated}件のジャンルを更新しました` })
+    }
+
     const names = splitNames(body.text ?? '')
     if (names.length === 0) return json({ error: '品名が空です' }, 400)
 
