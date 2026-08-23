@@ -9,6 +9,16 @@ import {
   CATEGORY_ORDER,
 } from '../utils/extraItemsApi.js'
 
+// ジャンルは文字チップではなく行頭の色帯で表す(横幅を消費せず売り場を判別できる)
+const CATEGORY_COLORS = {
+  '野菜': '#34a853', 'きのこ': '#7cb342', '海藻': '#00897b', '果物': '#f4511e',
+  '肉': '#d93025', '鶏肉': '#e8710a', '豚肉': '#c2185b', '牛肉': '#b71c1c',
+  '加工肉': '#ad1457', '魚': '#1a73e8',
+  '大豆食品': '#795548', '乳製品': '#039be5', '炭水化物': '#f9ab00',
+  '調味料': '#8e24aa', 'スパイス': '#5e35b1', 'その他': '#9aa0a6',
+}
+const catColor = (c) => CATEGORY_COLORS[c] ?? CATEGORY_COLORS['その他']
+
 // 献立由来の材料1行(タップで諸元の明細を展開)
 function MenuRow({ item, onToggle, busy }) {
   const [open, setOpen] = useState(false)
@@ -21,7 +31,8 @@ function MenuRow({ item, onToggle, busy }) {
 
   return (
     <div className={`m3-list-item-wrap${item.checked ? ' is-checked' : ''}`}>
-      <div className="m3-list-item">
+      <div className="m3-list-item compact">
+        <span className="m3-cat-bar" style={{ background: catColor(item.category) }} title={item.category} />
         <input
           type="checkbox"
           className="m3-checkbox"
@@ -29,15 +40,10 @@ function MenuRow({ item, onToggle, busy }) {
           disabled={busy}
           onChange={() => onToggle(item, !item.checked)}
         />
-        <button type="button" className="m3-list-body" onClick={() => setOpen((v) => !v)}>
-          <span className="m3-row-main">
-            <span className="m3-list-title">{item.name}</span>
-            <span className="m3-row-chips">
-              <span className="m3-chip-cat">{item.category}</span>
-              <span className="m3-chip-src menu">献立</span>
-              {item.skip && <span className="m3-chip-mini">計上不要</span>}
-            </span>
-          </span>
+        <button type="button" className="m3-list-body compact" onClick={() => setOpen((v) => !v)}>
+          <span className="m3-src-icon" title="献立から">📅</span>
+          <span className="m3-list-title">{item.name}</span>
+          {item.skip && <span className="m3-chip-mini">不要</span>}
           <span className="m3-list-meta">{qtyLabel}</span>
           <span className={`m3-expand-icon${open ? ' open' : ''}`}>▾</span>
         </button>
@@ -45,6 +51,7 @@ function MenuRow({ item, onToggle, busy }) {
 
       {open && (
         <div className="m3-detail-panel">
+          <p className="m3-detail-cat">{item.category}</p>
           {item.details.map((d, i) => (
             <div key={i} className="m3-detail-row">
               {d.recipeUrl ? (
@@ -72,25 +79,25 @@ function MenuRow({ item, onToggle, busy }) {
 function ExtraRow({ item, onToggle, onDelete }) {
   return (
     <div className={`m3-list-item-wrap${item.checked ? ' is-checked' : ''}`}>
-      <div className="m3-list-item">
+      <div className="m3-list-item compact">
+        <span
+          className="m3-cat-bar"
+          style={{ background: catColor(item.category || 'その他') }}
+          title={item.category || 'その他'}
+        />
         <input
           type="checkbox"
           className="m3-checkbox"
           checked={!!item.checked}
           onChange={() => onToggle(item)}
         />
-        <div className="m3-list-body m3-list-body-static">
-          <span className="m3-row-main">
-            <span className="m3-list-title">{item.name}</span>
-            <span className="m3-row-chips">
-              <span className="m3-chip-cat">{item.category || 'その他'}</span>
-              <span className="m3-chip-src manual">手動</span>
-            </span>
-          </span>
+        <div className="m3-list-body compact m3-list-body-static">
+          <span className="m3-src-icon" title="手動で追加">✋</span>
+          <span className="m3-list-title">{item.name}</span>
         </div>
         <button
           type="button"
-          className="icon-btn icon-btn-danger"
+          className="icon-btn icon-btn-danger icon-btn-sm"
           onClick={() => onDelete(item)}
           aria-label="削除"
         >
@@ -155,8 +162,9 @@ export default function ShoppingListScreen({ onRegenerate }) {
   }
 
   // 献立由来と手動登録を1つのリストに統合する。
-  // 見出しは出さずカテゴリ順に並べるだけにして、1画面あたりの表示量を増やしている。
-  const rows = useMemo(() => {
+  // カテゴリ順は見出しなしのフラット表示(表示量優先)、
+  // レシピ順はどのレシピの材料か分かるよう見出しでグルーピングする。
+  const sections = useMemo(() => {
     const menuItems = (list?.items?.groups ?? []).flatMap((g) =>
       g.items.map((it) => ({ kind: 'menu', category: g.category, ...it }))
     )
@@ -171,21 +179,52 @@ export default function ShoppingListScreen({ onRegenerate }) {
     if (hideChecked) all = all.filter((it) => !it.checked)
 
     if (sortMode === 'recipe') {
-      // レシピ順: 献立由来はレシピ名、手動登録は末尾にまとめる
-      const keyOf = (it) => (it.kind === 'menu' ? it.details?.[0]?.recipeTitle ?? '' : '\uffff手動登録')
-      return all.sort((a, b) => keyOf(a).localeCompare(keyOf(b), 'ja') || a.name.localeCompare(b.name, 'ja'))
+      // 1つの材料が複数レシピで使われる場合、それぞれの見出しの下に出す
+      const byRecipe = new Map()
+      for (const it of all) {
+        if (it.kind === 'extra') {
+          const key = '手動で追加'
+          const entry = byRecipe.get(key) ?? { label: key, url: null, items: [] }
+          entry.items.push(it)
+          byRecipe.set(key, entry)
+          continue
+        }
+        for (const d of it.details ?? []) {
+          const key = d.recipeTitle
+          const entry = byRecipe.get(key) ?? { label: key, url: d.recipeUrl, items: [] }
+          if (!entry.items.some((x) => x.ingredientId === it.ingredientId)) entry.items.push(it)
+          byRecipe.set(key, entry)
+        }
+      }
+      // 「手動で追加」は常に最後に回す
+      return Array.from(byRecipe.values()).sort((a, b) => {
+        if (a.label === '手動で追加') return 1
+        if (b.label === '手動で追加') return -1
+        return a.label.localeCompare(b.label, 'ja')
+      })
     }
 
     const catIndex = (c) => {
       const i = CATEGORY_ORDER.indexOf(c)
       return i === -1 ? 999 : i
     }
-    return all.sort(
+    all.sort(
       (a, b) => catIndex(a.category) - catIndex(b.category) || a.name.localeCompare(b.name, 'ja')
     )
+    return [{ label: null, url: null, items: all }]
   }, [list, extras, showSkipped, hideChecked, sortMode])
 
-  const remaining = rows.filter((r) => !r.checked).length
+  // 件数はレシピ順で重複計上しないよう、ユニークキーで数える
+  const remaining = useMemo(() => {
+    const seen = new Set()
+    for (const sec of sections) {
+      for (const r of sec.items) {
+        if (r.checked) continue
+        seen.add(r.kind === 'menu' ? `m-${r.ingredientId}` : `e-${r.id}`)
+      }
+    }
+    return seen.size
+  }, [sections])
 
   return (
     <div className="shopping-screen">
@@ -208,7 +247,7 @@ export default function ShoppingListScreen({ onRegenerate }) {
         </div>
         <div className="m3-toolbar-switches">
           <label className="m3-switch-row">
-            <span className="m3-switch-label">未購入のみ</span>
+            <span className="m3-switch-label">未購入</span>
             <button
               type="button"
               role="switch"
@@ -220,7 +259,7 @@ export default function ShoppingListScreen({ onRegenerate }) {
             </button>
           </label>
           <label className="m3-switch-row">
-            <span className="m3-switch-label">計上不要も</span>
+            <span className="m3-switch-label">常備品</span>
             <button
               type="button"
               role="switch"
@@ -253,30 +292,42 @@ export default function ShoppingListScreen({ onRegenerate }) {
 
         {list === undefined ? (
           <p className="m3-empty">読み込み中…</p>
-        ) : rows.length === 0 ? (
+        ) : sections.every((sec) => sec.items.length === 0) ? (
           <p className="m3-empty">
             表示できる品がありません。右下のボタンから追加するか、献立から作成してください。
           </p>
         ) : (
-          <div className="m3-card">
-            {rows.map((r) =>
-              r.kind === 'menu' ? (
-                <MenuRow
-                  key={`m-${r.ingredientId}`}
-                  item={r}
-                  onToggle={handleToggleMenu}
-                  busy={busyId === r.ingredientId}
-                />
-              ) : (
-                <ExtraRow
-                  key={`e-${r.id}`}
-                  item={r}
-                  onToggle={handleToggleExtra}
-                  onDelete={handleDeleteExtra}
-                />
-              )
-            )}
-          </div>
+          sections.map((sec) => (
+            <div key={sec.label ?? 'all'} className="m3-group">
+              {sec.label &&
+                (sec.url ? (
+                  <a className="m3-section-recipe" href={sec.url} target="_blank" rel="noreferrer">
+                    {sec.label}
+                  </a>
+                ) : (
+                  <p className="m3-group-header">{sec.label}</p>
+                ))}
+              <div className="m3-card">
+                {sec.items.map((r) =>
+                  r.kind === 'menu' ? (
+                    <MenuRow
+                      key={`m-${r.ingredientId}`}
+                      item={r}
+                      onToggle={handleToggleMenu}
+                      busy={busyId === r.ingredientId}
+                    />
+                  ) : (
+                    <ExtraRow
+                      key={`e-${r.id}`}
+                      item={r}
+                      onToggle={handleToggleExtra}
+                      onDelete={handleDeleteExtra}
+                    />
+                  )
+                )}
+              </div>
+            </div>
+          ))
         )}
       </div>
 

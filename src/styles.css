@@ -1104,3 +1104,108 @@ button { font-family: var(--font-sans); }
 /* ── 献立アイディア ── */
 .ideas-screen { display: flex; flex-direction: column; }
 .ideas-screen .m3-tabs { top: 0; }
+
+/* ── コンパクト1行表示 ── */
+.m3-list-item.compact { padding: 0 8px 0 0; gap: 2px; align-items: stretch; }
+
+.m3-cat-bar {
+  width: 4px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  margin: 6px 6px 6px 0;
+}
+
+.m3-list-item.compact .m3-checkbox { align-self: center; }
+
+.m3-list-body.compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.m3-src-icon { font-size: 11px; flex-shrink: 0; opacity: .75; }
+
+.m3-list-body.compact .m3-list-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.icon-btn-sm { width: 30px; height: 30px; align-self: center; }
+
+.m3-detail-cat {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  margin: 0 0 6px;
+}
+
+.m3-section-recipe {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: none;
+  margin: 4px 0 0 4px;
+  display: inline-block;
+}
+.m3-section-recipe:hover { text-decoration: underline; }
+
+/* ── ツールバーを1行に収める ── */
+.m3-toolbar {
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 8px 12px;
+  overflow-x: auto;
+}
+.m3-toolbar .m3-segmented { flex-shrink: 0; }
+.m3-toolbar-switches { flex-wrap: nowrap; gap: 10px; flex-shrink: 0; }
+.m3-toolbar .m3-segment { padding: 7px 12px; font-size: 12px; }
+.m3-switch-label { font-size: 12px; white-space: nowrap; }
+.m3-switch { width: 38px; height: 22px; }
+.m3-switch-thumb { width: 14px; height: 14px; }
+.m3-switch.on .m3-switch-thumb { transform: translateX(16px); }
+
+/* ── 定番リストのチップ ── */
+.m3-sheet-subtitle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 8px;
+}
+.m3-sheet-subtitle-row .m3-sheet-subtitle { margin: 0; }
+.m3-sheet-subtitle-actions { display: flex; align-items: center; gap: 4px; }
+
+.m3-staple-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.m3-staple-chip.active {
+  background: var(--primary-container);
+  border-color: var(--primary-container);
+}
+.m3-staple-chip-label {
+  border: none;
+  background: none;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--on-surface);
+  cursor: pointer;
+}
+.m3-staple-chip.active .m3-staple-chip-label { color: var(--on-primary-container); }
+.m3-staple-chip-remove {
+  border: none;
+  background: none;
+  color: var(--error);
+  font-size: 15px;
+  padding: 7px 10px 7px 2px;
+  cursor: pointer;
+}

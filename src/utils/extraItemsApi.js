@@ -50,26 +50,36 @@ export async function deleteCheckedExtraItems() {
   if (error) throw error
 }
 
-// よく買うもの: 過去の手動登録の履歴から、登録回数の多い順に上位を返す。
-// マスタを別途メンテしなくても、使うほど自分の定番に馴染む。
-export async function fetchFrequentItems(limit = 12) {
-  const { data, error } = await supabase
-    .from('shopping_extra_items')
-    .select('name')
-    .order('created_at', { ascending: false })
-    .limit(500)
-  if (error) throw error
+// ── よく買うもの(定番リスト)──
+// 履歴からの自動集計ではなく、ユーザーが自分で登録・削除して育てるマスタ。
+// 買い物リストを片付けても消えず、余計なレコードも溜まらない。
 
-  const counts = new Map()
-  for (const row of data ?? []) {
-    const name = (row.name ?? '').trim()
-    if (!name) continue
-    counts.set(name, (counts.get(name) ?? 0) + 1)
-  }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([name, count]) => ({ name, count }))
+export async function fetchStapleItems() {
+  const { data, error } = await supabase
+    .from('staple_items')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function addStapleItem(name) {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed) return null
+  // 同名は登録済みとして無視する(name に unique 制約あり)
+  const { data, error } = await supabase
+    .from('staple_items')
+    .upsert({ name: trimmed }, { onConflict: 'name', ignoreDuplicates: true })
+    .select()
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function deleteStapleItem(id) {
+  const { error } = await supabase.from('staple_items').delete().eq('id', id)
+  if (error) throw error
 }
 
 // カテゴリごとにグループ化(マスタに無いものは「その他」へ)

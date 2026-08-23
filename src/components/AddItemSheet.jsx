@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { addExtraItems, fetchFrequentItems } from '../utils/extraItemsApi.js'
+import {
+  addExtraItems,
+  fetchStapleItems,
+  addStapleItem,
+  deleteStapleItem,
+} from '../utils/extraItemsApi.js'
 
 function getRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -18,12 +23,17 @@ export default function AddItemSheet({ onClose, onAdded }) {
   const [saving, setSaving] = useState(false)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState(null)
-  const [frequent, setFrequent] = useState([])
+  const [staples, setStaples] = useState([])
   const [picked, setPicked] = useState([])
+  const [editMode, setEditMode] = useState(false)
   const recognitionRef = useRef(null)
 
+  function loadStaples() {
+    fetchStapleItems().then(setStaples).catch(() => setStaples([]))
+  }
+
   useEffect(() => {
-    fetchFrequentItems().then(setFrequent).catch(() => setFrequent([]))
+    loadStaples()
     return () => {
       try {
         recognitionRef.current?.abort()
@@ -35,6 +45,21 @@ export default function AddItemSheet({ onClose, onAdded }) {
 
   function togglePick(name) {
     setPicked((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]))
+  }
+
+  // 入力欄の内容を定番リストに登録する
+  async function registerStaple() {
+    const v = text.trim()
+    if (!v) return
+    await addStapleItem(v)
+    setText('')
+    loadStaples()
+  }
+
+  async function removeStaple(item) {
+    await deleteStapleItem(item.id)
+    setPicked((prev) => prev.filter((n) => n !== item.name))
+    loadStaples()
   }
 
   async function commit(explicitText) {
@@ -114,22 +139,51 @@ export default function AddItemSheet({ onClose, onAdded }) {
 
         {listening && <p className="m3-listening-hint">聞き取り中… 話しかけてください</p>}
 
-        {frequent.length > 0 && (
-          <>
-            <p className="m3-sheet-subtitle">よく買うもの</p>
-            <div className="m3-chip-wrap">
-              {frequent.map((f) => (
+        <div className="m3-sheet-subtitle-row">
+          <p className="m3-sheet-subtitle">よく買うもの</p>
+          <div className="m3-sheet-subtitle-actions">
+            {text.trim() && !editMode && (
+              <button type="button" className="m3-text-button" onClick={registerStaple}>
+                ＋定番に登録
+              </button>
+            )}
+            {staples.length > 0 && (
+              <button type="button" className="m3-text-button" onClick={() => setEditMode((v) => !v)}>
+                {editMode ? '完了' : '編集'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {staples.length === 0 ? (
+          <p className="m3-supporting-text">
+            上の入力欄に品名を入れて「＋定番に登録」を押すと、次回からワンタップで選べます。
+          </p>
+        ) : (
+          <div className="m3-chip-wrap">
+            {staples.map((f) => (
+              <span key={f.id} className={`m3-staple-chip${picked.includes(f.name) ? ' active' : ''}`}>
                 <button
                   type="button"
-                  key={f.name}
-                  className={`chip${picked.includes(f.name) ? ' active' : ''}`}
+                  className="m3-staple-chip-label"
+                  disabled={editMode}
                   onClick={() => togglePick(f.name)}
                 >
                   {f.name}
                 </button>
-              ))}
-            </div>
-          </>
+                {editMode && (
+                  <button
+                    type="button"
+                    className="m3-staple-chip-remove"
+                    onClick={() => removeStaple(f)}
+                    aria-label={`${f.name}を定番から削除`}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
         )}
 
         {error && <p className="login-error">{error}</p>}
