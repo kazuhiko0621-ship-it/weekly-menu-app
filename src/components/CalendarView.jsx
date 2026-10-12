@@ -6,6 +6,7 @@ import MessageModal from './MessageModal.jsx'
 import { SLOTS, getTwoWeekDays, toDateKey, isToday } from '../utils/date.js'
 import { fetchMealsForWeek, moveMealTo, EACH_SOURCE } from '../utils/mealsApi.js'
 import { mapsUrlForPlace } from '../utils/places.js'
+import { fetchBentoLogForDates } from '../utils/bentoApi.js'
 
 const DOW_HEADERS = ['月', '火', '水', '木', '金', '土', '日']
 
@@ -26,6 +27,7 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
   // 移動先として選ばれた日付(未選択なら移動元と同じ日=コマだけ変える操作)
   const [moveTargetDate, setMoveTargetDate] = useState(null)
   const [message, setMessage] = useState(null)
+  const [bentoLog, setBentoLog] = useState([])
   const pressTimerRef = useRef(null)
 
   function reload() {
@@ -41,6 +43,10 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
     fetchMealsForWeek(dateKeys)
       .then((data) => { if (!cancelled) setMeals(data) })
       .finally(() => { if (!cancelled) setLoading(false) })
+    // 食べた弁当の記録(献立とは別枠で参考表示する)
+    fetchBentoLogForDates(dateKeys)
+      .then((data) => { if (!cancelled) setBentoLog(data) })
+      .catch(() => { if (!cancelled) setBentoLog([]) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart.getTime(), refreshKey])
@@ -123,6 +129,7 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
     : ''
 
   const selectedDay = days.find((d) => d.dateKey === selectedDateKey)
+  const bentoForSelected = bentoLog.filter((b) => b.eaten_on === selectedDateKey)
   const mealsForSelected = meals.filter((m) => m.date === selectedDateKey)
   const mealsBySlot = {}
   for (const s of SLOTS) mealsBySlot[s.key] = []
@@ -308,6 +315,31 @@ export default function CalendarView({ weekStart, onPrevWeek, onNextWeek, onEdit
                 )
               })
             })}
+          </div>
+        )}
+
+        {!loading && bentoForSelected.length > 0 && (
+          <div className="cal-bento-section">
+            <p className="cal-bento-label">食べた弁当</p>
+            <div className="cal-bento-list">
+              {bentoForSelected.map((b) => (
+                <div key={b.id} className="cal-bento-row">
+                  <span className="cal-bento-icon">🍱</span>
+                  {b.notion_url ? (
+                    <a
+                      className="cal-bento-name meal-name-link"
+                      href={b.notion_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {b.name}
+                    </a>
+                  ) : (
+                    <span className="cal-bento-name">{b.name}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

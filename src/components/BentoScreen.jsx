@@ -1,13 +1,15 @@
 import { useCallback, useState } from 'react'
 import BentoStockList from './BentoStockList.jsx'
 import BentoRegisterForm from './BentoRegisterForm.jsx'
+import BentoLogList from './BentoLogList.jsx'
 import MessageModal from './MessageModal.jsx'
 
 // 「弁当」タブ。在庫一覧と作りおき登録をサブタブで切り替える。
 // 献立機能とは独立していて、人気献立にも買い物リストにも影響しない。
-export default function BentoScreen({ onSummaryChange }) {
-  const [sub, setSub] = useState('stock') // 'stock' | 'register'
+export default function BentoScreen({ onSummaryChange, onConsumed }) {
+  const [sub, setSub] = useState('stock') // 'stock' | 'register' | 'log'
   const [refreshKey, setRefreshKey] = useState(0)
+  const [logKey, setLogKey] = useState(0)
   const [message, setMessage] = useState(null)
 
   const handleSummary = useCallback(
@@ -32,11 +34,26 @@ export default function BentoScreen({ onSummaryChange }) {
         >
           作りおき登録
         </button>
+        <button
+          type="button"
+          className={`m3-tab${sub === 'log' ? ' selected' : ''}`}
+          onClick={() => setSub('log')}
+        >
+          ログ
+        </button>
       </div>
 
       {sub === 'stock' && (
-        <BentoStockList refreshKey={refreshKey} onSummaryChange={handleSummary} />
+        <BentoStockList
+          refreshKey={refreshKey}
+          onSummaryChange={handleSummary}
+          onConsumed={() => {
+            setLogKey((k) => k + 1)
+            onConsumed?.()
+          }}
+        />
       )}
+      {sub === 'log' && <BentoLogList refreshKey={logKey} />}
       {sub === 'register' && (
         <BentoRegisterForm
           onMessage={setMessage}

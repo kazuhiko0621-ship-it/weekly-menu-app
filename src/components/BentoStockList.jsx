@@ -11,7 +11,7 @@ import {
 } from '../utils/bentoApi.js'
 
 // 弁当在庫の一覧(サブタブ1)。ロット単位で表示し、1食ずつ消費できる。
-export default function BentoStockList({ refreshKey, onSummaryChange }) {
+export default function BentoStockList({ refreshKey, onSummaryChange, onConsumed }) {
   const [lots, setLots] = useState(undefined)
   const [busyId, setBusyId] = useState(null)
   const [undoLot, setUndoLot] = useState(null)
@@ -49,8 +49,13 @@ export default function BentoStockList({ refreshKey, onSummaryChange }) {
         .filter((l) => l.remaining > 0)
     )
     try {
-      await consumeBentoLot(lot)
-      showUndo(lot)
+      const res = await consumeBentoLot(lot)
+      if (res) {
+        showUndo({ ...lot, logId: res.log?.id })
+        onConsumed?.()
+      } else {
+        load()
+      }
     } catch {
       load()
     } finally {
@@ -64,7 +69,8 @@ export default function BentoStockList({ refreshKey, onSummaryChange }) {
     setUndoLot(null)
     clearTimeout(toastTimer.current)
     try {
-      await undoConsumeBentoLot({ ...target, remaining: target.remaining - 1 })
+      await undoConsumeBentoLot({ ...target, remaining: target.remaining - 1 }, target.logId)
+      onConsumed?.()
     } finally {
       load()
     }

@@ -1400,3 +1400,92 @@ button { font-family: var(--font-sans); }
 
 .bento-step-value { font-size: 18px; font-weight: 500; min-width: 54px; text-align: center; }
 .bento-step-hint { font-size: 11px; color: var(--on-surface-variant); }
+
+/* ── 弁当ログ ── */
+.bento-log { padding: 10px 12px 88px; }
+.bento-log-total { margin: 0 0 10px 2px; }
+.bento-log-group { margin-bottom: 12px; }
+
+.bento-log-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+  margin: 0 0 5px 2px;
+}
+
+.bento-log-count {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  background: var(--surface-container-high);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+}
+
+.bento-log-card {
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.bento-log-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 12px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.bento-log-row:last-child { border-bottom: none; }
+
+.bento-log-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--on-surface);
+}
+
+/* ── 献立画面に表示する「食べた弁当」 ── */
+.cal-bento-section { margin-top: 14px; }
+
+.cal-bento-label {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  margin: 0 0 5px 2px;
+}
+
+.cal-bento-list {
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.cal-bento-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.cal-bento-row:last-child { border-bottom: none; }
+
+.cal-bento-icon { font-size: 13px; flex-shrink: 0; }
+
+.cal-bento-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--on-surface);
+}

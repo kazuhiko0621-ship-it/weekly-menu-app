@@ -136,7 +136,9 @@ export default function App() {
             onSummaryChange={setShoppingSummary}
           />
         )}
-        {view === 'bento' && <BentoScreen onSummaryChange={setBentoSummary} />}
+        {view === 'bento' && (
+          <BentoScreen onSummaryChange={setBentoSummary} onConsumed={bumpRefresh} />
+        )}
         {view === 'ideas' && (
           <IdeasScreen
             onAddWishlistItem={() => setAddingWishlistItem(true)}

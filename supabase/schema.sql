@@ -76,6 +76,27 @@ create policy "allow all for authenticated users" on bento_stock
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
 
+-- 弁当を食べた記録。在庫から1食消費するたびに1行追加される。
+-- 献立(meals)とは別物で、献立画面には参考情報として表示するだけ。
+create table if not exists bento_log (
+  id uuid primary key default gen_random_uuid(),
+  lot_id uuid,
+  notion_page_id text,
+  name text not null,
+  notion_url text,
+  eaten_on date not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bento_log_eaten_on_idx on bento_log (eaten_on);
+
+alter table bento_log enable row level security;
+drop policy if exists "allow all for authenticated users" on bento_log;
+create policy "allow all for authenticated users" on bento_log
+  for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- よく買うもの(定番リスト)。ユーザーが自分で登録・削除して育てるマスタ。
 -- 買い物メモの履歴とは独立しているので、買い物リストを片付けても消えない。
 create table if not exists staple_items (

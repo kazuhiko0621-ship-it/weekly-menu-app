@@ -4,9 +4,13 @@ import { addBentoLot } from '../utils/bentoApi.js'
 import { toDateKey } from '../utils/date.js'
 
 // 作りおき登録(サブタブ2)。Notionで「弁当」がONのレシピから選んで食数を登録する。
+// 既定で絞り込むカテゴリー。弁当向けの作りおきはここに集まっている想定。
+const DEFAULT_CATEGORY = 'ミールプレップ'
+
 export default function BentoRegisterForm({ onRegistered, onMessage }) {
   const [recipes, setRecipes] = useState(undefined)
   const [filter, setFilter] = useState('')
+  const [category, setCategory] = useState(DEFAULT_CATEGORY)
   const [selected, setSelected] = useState(null)
   const [madeOn, setMadeOn] = useState(() => toDateKey(new Date()))
   const [count, setCount] = useState(4)
@@ -27,11 +31,25 @@ export default function BentoRegisterForm({ onRegistered, onMessage }) {
     }
   }, [])
 
+  // 弁当ONのレシピに付いているカテゴリーの一覧(チップ表示用)
+  const categoryOptions = useMemo(() => {
+    const set = new Set()
+    for (const r of recipes ?? []) for (const c of r.categories ?? []) set.add(c)
+    const list = Array.from(set).sort((a, b) => a.localeCompare(b, 'ja'))
+    // 既定カテゴリーは常に先頭に出す
+    return list.includes(DEFAULT_CATEGORY)
+      ? [DEFAULT_CATEGORY, ...list.filter((c) => c !== DEFAULT_CATEGORY)]
+      : list
+  }, [recipes])
+
   const visible = useMemo(() => {
     const q = filter.trim().toLowerCase()
-    if (!q) return recipes ?? []
-    return (recipes ?? []).filter((r) => r.name.toLowerCase().includes(q))
-  }, [recipes, filter])
+    return (recipes ?? []).filter((r) => {
+      if (category && !(r.categories ?? []).includes(category)) return false
+      if (q && !r.name.toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [recipes, filter, category])
 
   async function handleSubmit() {
     if (saving) return
@@ -52,6 +70,7 @@ export default function BentoRegisterForm({ onRegistered, onMessage }) {
       setSelected(null)
       setFilter('')
       setCount(4)
+      setCategory(DEFAULT_CATEGORY)
       onMessage?.('登録しました')
       onRegistered?.()
     } catch (e) {
@@ -81,6 +100,27 @@ export default function BentoRegisterForm({ onRegistered, onMessage }) {
         </p>
       ) : (
         <>
+          {categoryOptions.length > 0 && (
+            <div className="chip-row-scroll">
+              <button
+                type="button"
+                className={`chip${category === null ? ' active' : ''}`}
+                onClick={() => setCategory(null)}
+              >
+                すべて
+              </button>
+              {categoryOptions.map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  className={`chip${category === c ? ' active' : ''}`}
+                  onClick={() => setCategory(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             className="m3-text-field"
             type="text"
@@ -90,7 +130,11 @@ export default function BentoRegisterForm({ onRegistered, onMessage }) {
           />
           <div className="bento-menu-list">
             {visible.length === 0 ? (
-              <p className="results-hint">一致するメニューがありません</p>
+              <p className="results-hint">
+                {category
+                  ? `「${category}」に一致するメニューがありません`
+                  : '一致するメニューがありません'}
+              </p>
             ) : (
               visible.map((r) => (
                 <button

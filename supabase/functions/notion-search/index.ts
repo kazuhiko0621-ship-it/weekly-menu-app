@@ -126,11 +126,19 @@ serve(async (req) => {
         for (const page of data.results ?? []) {
           const name = titleProp ? getPlainText(page.properties[titleProp]) : ''
           if (!name) continue
+          const catProp = page.properties[CATEGORY_PROP_NAME]
+          const categories =
+            catProp?.type === 'multi_select'
+              ? (catProp.multi_select ?? []).map((o: any) => o.name)
+              : catProp?.type === 'select' && catProp.select?.name
+                ? [catProp.select.name]
+                : []
           results.push({
             id: page.id,
             name,
             url: page.url,
-            category: getPlainText(page.properties[CATEGORY_PROP_NAME]),
+            category: categories.join(', '),
+            categories,
           })
         }
         cursor = data.has_more ? data.next_cursor : undefined
