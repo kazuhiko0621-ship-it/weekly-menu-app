@@ -12,6 +12,19 @@ export async function fetchNotionMeta() {
   return data
 }
 
+// 「弁当」プロパティがONのレシピを全件取得する(弁当在庫の登録画面で使う)
+export async function fetchBentoRecipes() {
+  const { data, error } = await supabase.functions.invoke('notion-search', {
+    body: { mode: 'bento' },
+  })
+  if (error) {
+    console.error('notion-search(bento) error', error)
+    throw error
+  }
+  if (data?.error) throw new Error('レシピの取得に失敗しました')
+  return data?.results ?? []
+}
+
 // タイトル部分一致 + カテゴリー/評価での絞り込み検索
 export async function searchNotionRecipes({ query = '', categories = [], ratings = [] }) {
   if (!query.trim() && categories.length === 0 && ratings.length === 0) return []

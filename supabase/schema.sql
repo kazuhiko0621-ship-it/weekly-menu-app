@@ -52,6 +52,30 @@ create policy "allow all for authenticated users" on shopping_list
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
 
+-- 弁当の作りおき在庫。献立(meals)とは完全に独立していて、
+-- 人気献立の集計にも買い物リストにも影響しない。
+-- 「いつ・どのメニューを・何食分作ったか」を製造ロット単位の1行で持つ。
+create table if not exists bento_stock (
+  id uuid primary key default gen_random_uuid(),
+  notion_page_id text not null,
+  name text not null,
+  notion_url text,
+  made_on date not null,
+  made_count int not null check (made_count between 1 and 10),
+  remaining int not null check (remaining between 0 and 10),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bento_stock_remaining_idx on bento_stock (remaining);
+create index if not exists bento_stock_made_on_idx on bento_stock (made_on);
+
+alter table bento_stock enable row level security;
+drop policy if exists "allow all for authenticated users" on bento_stock;
+create policy "allow all for authenticated users" on bento_stock
+  for all
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- よく買うもの(定番リスト)。ユーザーが自分で登録・削除して育てるマスタ。
 -- 買い物メモの履歴とは独立しているので、買い物リストを片付けても消えない。
 create table if not exists staple_items (

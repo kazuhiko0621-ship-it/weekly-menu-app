@@ -1,7 +1,8 @@
 // Supabase Edge Function: notion-search
 //
-// 2つのモードで動作する:
+// 3つのモードで動作する:
 //   mode: "meta"   → タイトル列名、「カテゴリー」「評価」列の選択肢一覧を返す
+//   mode: "bento"  → 「弁当」チェックボックスがONのレシピを全件返す
 //   mode: "search"(既定) → タイトル部分一致 + カテゴリー/評価での絞り込み検索
 //
 // 事前に以下の secrets を設定してください:
@@ -15,6 +16,7 @@ const NOTION_VERSION = '2022-06-28'
 
 const CATEGORY_PROP_NAME = 'カテゴリー'
 const RATING_PROP_NAME = '評価'
+const BENTO_PROP_NAME = '弁当'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -96,6 +98,46 @@ serve(async (req) => {
         category: categoryInfo,
         rating: ratingInfo,
       })
+    }
+
+    // 弁当モード: 「弁当」チェックボックスがONのレシピを全件返す
+    if (mode === 'bento') {
+      const results: any[] = []
+      let cursor: string | undefined = undefined
+      do {
+        const res = await fetch(
+          `https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${NOTION_TOKEN}`,
+              'Notion-Version': NOTION_VERSION,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              page_size: 100,
+              ...(cursor ? { start_cursor: cursor } : {}),
+              filter: { property: BENTO_PROP_NAME, checkbox: { equals: true } },
+            }),
+          }
+        )
+        const data = await res.json()
+        if (!res.ok) return json({ error: data }, res.status)
+        for (const page of data.results ?? []) {
+          const name = titleProp ? getPlainText(page.properties[titleProp]) : ''
+          if (!name) continue
+          results.push({
+            id: page.id,
+            name,
+            url: page.url,
+            category: getPlainText(page.properties[CATEGORY_PROP_NAME]),
+          })
+        }
+        cursor = data.has_more ? data.next_cursor : undefined
+      } while (cursor)
+
+      results.sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+      return json({ results })
     }
 
     // --- search ---

@@ -1,8 +1,9 @@
 export default function NavBar({ view, onChange }) {
   const items = [
     { key: 'week', label: '献立', icon: '📅' },
-    { key: 'shopping', label: '買い物リスト', icon: '🛒' },
-    { key: 'ideas', label: '献立アイディア', icon: '💡' },
+    { key: 'bento', label: '弁当', icon: '🍱' },
+    { key: 'shopping', label: '買い物', icon: '🛒' },
+    { key: 'ideas', label: 'アイディア', icon: '💡' },
   ]
 
   return (

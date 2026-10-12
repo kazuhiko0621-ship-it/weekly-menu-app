@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import CalendarView from './components/CalendarView.jsx'
 import IdeasScreen from './components/IdeasScreen.jsx'
+import BentoScreen from './components/BentoScreen.jsx'
 import WishlistAddScreen from './components/WishlistAddScreen.jsx'
 import ShoppingRangeScreen from './components/ShoppingRangeScreen.jsx'
 import ShoppingListScreen from './components/ShoppingListScreen.jsx'
@@ -11,13 +12,14 @@ import { supabase } from './supabaseClient.js'
 import { getWeekStart, addDays, formatTwoWeekRange } from './utils/date.js'
 
 export default function App() {
-  const [view, setView] = useState('week') // 'week' | 'shopping' | 'ideas'
+  const [view, setView] = useState('week') // 'week' | 'bento' | 'shopping' | 'ideas'
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()))
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingDay, setEditingDay] = useState(null)
   const [addingWishlistItem, setAddingWishlistItem] = useState(false)
   const [rangeOpen, setRangeOpen] = useState(false)
   const [shoppingSummary, setShoppingSummary] = useState(null)
+  const [bentoSummary, setBentoSummary] = useState(null)
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
@@ -93,12 +95,21 @@ export default function App() {
         <header className="app-header app-header-slim">
           <div className="app-header-titlebox">
             <span className="app-header-date">
-              {view === 'shopping' ? '買い物リスト' : '献立アイディア'}
+              {view === 'shopping'
+                ? '買い物リスト'
+                : view === 'bento'
+                  ? '弁当在庫管理'
+                  : '献立アイディア'}
             </span>
             {view === 'shopping' && shoppingSummary && (
               <span className="app-header-sub">
                 {shoppingSummary.range ? `${shoppingSummary.range}・` : ''}
                 残り{shoppingSummary.remaining}品
+              </span>
+            )}
+            {view === 'bento' && bentoSummary && (
+              <span className="app-header-sub">
+                在庫 {bentoSummary.total}食 / {bentoSummary.lots}ロット
               </span>
             )}
           </div>
@@ -125,6 +136,7 @@ export default function App() {
             onSummaryChange={setShoppingSummary}
           />
         )}
+        {view === 'bento' && <BentoScreen onSummaryChange={setBentoSummary} />}
         {view === 'ideas' && (
           <IdeasScreen
             onAddWishlistItem={() => setAddingWishlistItem(true)}

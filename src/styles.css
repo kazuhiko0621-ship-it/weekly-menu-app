@@ -1249,3 +1249,154 @@ button { font-family: var(--font-sans); }
 
 .m3-text-button-danger { color: var(--error); }
 .m3-list-head-row { flex-wrap: wrap; gap: 6px; }
+
+/* ========================================
+   弁当在庫管理
+   ======================================== */
+.bento-screen { display: flex; flex-direction: column; }
+
+.bento-list { padding: 10px 12px 88px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+
+/* 1行スリム表示: 名前+メタを縦2段、右に在庫数・消費・削除 */
+.bento-lot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-xs);
+  padding: 6px 8px 6px 10px;
+}
+
+.bento-lot.stale {
+  border-color: #f9ab00;
+  background: var(--warning-container);
+}
+
+.bento-lot-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
+.bento-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.bento-name-link { color: var(--primary); }
+.bento-name-link:hover { text-decoration: underline; }
+
+.bento-meta {
+  font-size: 10px;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bento-lot.stale .bento-meta { color: #7f5700; font-weight: 500; }
+
+.bento-qty {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.bento-eat {
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.bento-eat:disabled { opacity: .4; cursor: default; }
+
+/* 消費の取り消しトースト */
+.bento-toast {
+  position: sticky;
+  bottom: 8px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--outline-strong, var(--outline));
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  font-size: 13px;
+  box-shadow: var(--elev-2);
+}
+.bento-undo {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── 作りおき登録 ── */
+.bento-form {
+  padding: 14px 14px 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bento-form .area-label { margin: 8px 0 0 2px; }
+
+.bento-menu-list {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.bento-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  border-bottom: 1px solid var(--outline-variant);
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.bento-menu-item:last-child { border-bottom: none; }
+.bento-menu-item.selected { background: var(--primary-container); }
+
+.bento-menu-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bento-stepper { display: flex; align-items: center; gap: 12px; }
+
+.bento-step-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--outline);
+  background: var(--surface);
+  color: var(--on-surface);
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.bento-step-btn:disabled { opacity: .35; cursor: default; }
+
+.bento-step-value { font-size: 18px; font-weight: 500; min-width: 54px; text-align: center; }
+.bento-step-hint { font-size: 11px; color: var(--on-surface-variant); }
