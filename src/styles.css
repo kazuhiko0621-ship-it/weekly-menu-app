@@ -952,13 +952,16 @@ button { font-family: var(--font-sans); }
 
 .m3-extra-name { padding: 12px 0; }
 
-/* ── 買い物リストのタブ ── */
+/* ── サブタブ ── */
+/* スクロールコンテナは .app-main で、アプリヘッダはその外側にある。
+   そのため固定位置は 0(=.app-main の上端)でなければならない。
+   56px にするとタブの上に隙間ができ、スクロールした中身が覗いてしまう。 */
 .m3-tabs {
   display: flex;
   background: var(--surface);
   border-bottom: 1px solid var(--outline-variant);
   position: sticky;
-  top: 56px;
+  top: 0;
   z-index: 14;
 }
 
@@ -1133,7 +1136,6 @@ button { font-family: var(--font-sans); }
 
 /* ── 献立アイディア ── */
 .ideas-screen { display: flex; flex-direction: column; }
-.ideas-screen .m3-tabs { top: 0; }
 
 /* ── コンパクト1行表示 ── */
 .m3-list-item.compact { padding: 0 8px 0 0; gap: 2px; align-items: stretch; }

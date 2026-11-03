@@ -42,12 +42,46 @@ function getCurrentPosition() {
   return positionPromise
 }
 
+// Googleから返ってきたエラーを、画面に出せる日本語メッセージに翻訳する。
+// 以前はconsole.errorに出すだけで[]を返していたため、
+// 「検索結果0件」と「APIが止まっている」の区別が画面上でつかなかった。
+function describePlacesError(status, data) {
+  const raw = data?.error?.message ?? ''
+  const reason = data?.error?.details?.find((d) => d.reason)?.reason ?? ''
+  const lower = raw.toLowerCase()
+
+  if (lower.includes('billing')) {
+    return {
+      code: 'BILLING_DISABLED',
+      message: 'Google Cloudの請求先アカウントが有効になっていません(無料トライアル終了後によく起こります)。',
+      raw,
+    }
+  }
+  if (lower.includes('referer') || lower.includes('referrer')) {
+    return { code: 'REFERER_BLOCKED', message: 'APIキーのHTTPリファラー制限でブロックされました。', raw }
+  }
+  if (reason === 'API_KEY_SERVICE_BLOCKED' || lower.includes('has not been used in project') || lower.includes('is disabled')) {
+    return { code: 'API_DISABLED', message: 'Places API (New) が無効、またはAPIキーの制限で許可されていません。', raw }
+  }
+  if (status === 429 || lower.includes('quota') || lower.includes('resource_exhausted')) {
+    return { code: 'QUOTA', message: '無料枠またはクォータの上限に達しました。', raw }
+  }
+  if (status === 403) {
+    return { code: 'FORBIDDEN', message: `Googleにリクエストを拒否されました(403)。${raw}`, raw }
+  }
+  return { code: 'UNKNOWN', message: `検索に失敗しました(HTTP ${status})。${raw}`, raw }
+}
+
+// 戻り値は { results, error } 。errorがnullでなければ「0件」ではなく「失敗」。
 export async function searchRestaurants(query) {
   if (!API_KEY) {
     console.warn('[places] VITE_GOOGLE_PLACES_API_KEY が設定されていません。')
-    return []
+    return {
+      results: [],
+      error: { code: 'NO_KEY', message: 'APIキーが設定されていません。', raw: '' },
+    }
   }
-  if (!query || query.trim().length === 0) return []
+  if (!query || query.trim().length === 0) return { results: [], error: null }
 
   const origin = await getCurrentPosition()
 
@@ -76,10 +110,11 @@ export async function searchRestaurants(query) {
       },
       body: JSON.stringify(body),
     })
-    const data = await res.json()
+    const data = await res.json().catch(() => null)
     if (!res.ok) {
-      console.error('places autocomplete error', data)
-      return []
+      const error = describePlacesError(res.status, data)
+      console.error('places autocomplete error', res.status, error.code, data)
+      return { results: [], error }
     }
     const results = (data.suggestions ?? [])
       .filter((s) => s.placePrediction)
@@ -97,9 +132,12 @@ export async function searchRestaurants(query) {
     if (origin) {
       results.sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity))
     }
-    return results
+    return { results, error: null }
   } catch (e) {
     console.error('places autocomplete error', e)
-    return []
+    return {
+      results: [],
+      error: { code: 'NETWORK', message: 'ネットワークエラーで検索できませんでした。', raw: String(e) },
+    }
   }
 }

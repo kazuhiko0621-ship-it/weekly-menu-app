@@ -36,6 +36,7 @@ export default function SlotPanel({
   const [notionResults, setNotionResults] = useState([])
   const [historyResults, setHistoryResults] = useState([])
   const [diningResults, setDiningResults] = useState([])
+  const [diningError, setDiningError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState(null)
@@ -111,6 +112,7 @@ export default function SlotPanel({
     const q = text.trim()
     if (q.length < 2) {
       setDiningResults([])
+      setDiningError(null)
       setSearched(false)
       return
     }
@@ -124,9 +126,11 @@ export default function SlotPanel({
     setLoading(true)
     const requestId = ++diningRequestIdRef.current
     debounceRef.current = setTimeout(async () => {
-      const results = await searchRestaurants(q)
+      const { results, error } = await searchRestaurants(q)
       if (requestId !== diningRequestIdRef.current) return // 古いリクエストの結果は無視
-      diningCacheRef.current.set(cacheKey, results)
+      // 失敗した場合はキャッシュしない(設定を直したらすぐ再試行できるように)
+      if (!error) diningCacheRef.current.set(cacheKey, results)
+      setDiningError(error)
       setDiningResults(results)
       setLoading(false)
       setSearched(true)
@@ -141,6 +145,7 @@ export default function SlotPanel({
     setNotionResults([])
     setHistoryResults([])
     setDiningResults([])
+    setDiningError(null)
     setSearched(false)
   }
 
@@ -282,6 +287,15 @@ export default function SlotPanel({
             <p className="area-label">検索結果</p>
             <div className="results-list">
               {loading && <p className="results-hint">検索中…</p>}
+              {!loading && diningError && (
+                <div className="m3-banner m3-banner-error">
+                  <strong>店舗検索が使えません</strong>
+                  <br />
+                  {diningError.message}
+                  <br />
+                  <span className="m3-supporting-text">コード: {diningError.code}</span>
+                </div>
+              )}
               {!loading && !searched && (
                 <p className="results-hint">
                   {mode === 'dining' ? '店舗名を入力してください' : '献立名を入力するか、絞り込み条件を選んでください'}
